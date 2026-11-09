@@ -1,0 +1,13 @@
+[package]
+name = "integration-tests"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dev-dependencies]
+anyhow = "1"
+near-workspaces = { version = "0.24", features = ["unstable"] }
+tokio = { version = "1", features = ["full"] }
+# near-workspaces pulls in native-tls; build OpenSSL from source so the tests
+# don't need libssl-dev / pkg-config on the host.
+openssl = { version = "0.10", features = ["vendored"] }

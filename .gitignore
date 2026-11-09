@@ -1,0 +1,26 @@
+# secrets
+.env
+.env.*
+!.env.example
+*.key
+*-key.json
+credentials/
+.near-credentials/
+
+# node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# rust
+target/
+*.wasm
+!contract/res/*.wasm
+
+# misc
+.DS_Store
+*.log
+
+# local working notes (contain personal details)
+BRIEF.md

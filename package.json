@@ -1,0 +1,17 @@
+{
+  "name": "rota",
+  "private": true,
+  "description": "Rotating savings circles on NEAR with an AI treasurer that cannot move the money",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "bot",
+    "web",
+    "scripts"
+  ],
+  "scripts": {
+    "test": "cd contract && cargo test"
+  }
+}
