@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json"
   },
   "engines": {
     "node": ">=22"
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",

@@ -1,3 +1,4 @@
+// Not part of the web build: run with node by global-setup, inside the full repo only.
 // Run by the e2e global setup with node: tops up amara and bao (NEAR + test USDC).
 import { Chain } from "../../scripts/lib/near.ts";
 import { getKey } from "../../scripts/lib/keys.ts";
