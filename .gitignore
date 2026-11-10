@@ -31,3 +31,6 @@ bot/data/
 
 # Fly.io app name picked by deploy/fly-deploy.sh
 deploy/.fly-app
+
+# Submission answers (HACKATHON.md: never commit the payload)
+SUBMISSION.md
