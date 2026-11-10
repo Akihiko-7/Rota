@@ -24,7 +24,7 @@ export async function connect(page: Page): Promise<void> {
 /** Clicks a transaction button and waits for the page's result notice; throws if it reports an error. */
 export async function sign(page: Page, name: string | RegExp): Promise<void> {
   const notice = page.locator(".notice");
-  const before = Number((await notice.getAttribute("data-seq", { timeout: 1 }).catch(() => null)) ?? 0);
+  const before = (await notice.count()) ? Number(await notice.getAttribute("data-seq")) : 0;
   await page.getByRole("button", { name }).click();
   await expect(notice).toHaveAttribute("data-seq", String(before + 1), { timeout: 90_000 });
   if (await notice.evaluate((n) => n.classList.contains("bad"))) throw new Error(`${name}: ${await notice.innerText()}`);

@@ -2087,5 +2087,27 @@
         "url": "https://testnet.nearblocks.io/txns/8VfEtXAGNkagtHevnn6XmpXJuJudrfXgssSu18NCUGuh"
       }
     ]
+  },
+  {
+    "run": "dissolve circle-v2.rota-nearhack.testnet circle 13",
+    "at": "2026-11-10T15:11:16.520Z",
+    "transactions": [
+      {
+        "label": "amara.rota-nearhack.testnet proposes to dissolve",
+        "hash": "E6XNYAUUo8EwPckaveUZJ7cNb9NRxHVgCiW8eougKcxj",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/E6XNYAUUo8EwPckaveUZJ7cNb9NRxHVgCiW8eougKcxj"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet votes to dissolve",
+        "hash": "9E5zh2T7YrrRNmK6Myta9QGvkhqdChJ4Boj9JPqEFSGJ",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/9E5zh2T7YrrRNmK6Myta9QGvkhqdChJ4Boj9JPqEFSGJ"
+      }
+    ]
   }
 ]

@@ -15,6 +15,8 @@ Rota is a rotating savings circle (susu, tanda, chama, chit fund, hui) on NEAR. 
 > | AI answers (NEAR AI Cloud) | Working live with `Qwen/Qwen3.8-27B` (tool calling confirmed, about $0.0003 per question). Tests use a mocked endpoint |
 > | Web app (`web/`) | Read-only pages work without a wallet: live proof checks, the finished demo circle, any circle by number. With a wallet: create, join, deposit, start, pay, pay out, swap turns, close by vote, and the NEP-413 page for the bot's `/link`. The full flow passes end-to-end browser tests on testnet. **Not deployed yet** (ready for Vercel) |
 > | Cross-chain pay (NEAR Intents) | **Mainnet only, not built yet.** The web app shows it disabled and labelled "Mainnet only" on testnet |
+> | Harvest, group staking (`contract/harvest`) | **Testnet only.** Sandbox tests pass. Locked `harvest-v1.rota-nearhack.testnet` is running its first real pot (17 test NEAR in `aurora.pool.f863973.m0`); results will be added when it ripens |
+> | Mainnet | **Not deployed yet.** The web app shows mainnet as "launching soon" with actions disabled |
 >
 > Phase 0 findings (API checks, design consequences) are in [docs/PHASE0.md](docs/PHASE0.md).
 
@@ -91,6 +93,15 @@ docker build -t rota-bot .
 docker run -d --name rota-bot --restart unless-stopped --env-file bot/bot.env -v rota-bot:/data rota-bot
 ```
 
+Hosting options for the image (it needs about 150 MB of memory and a small volume for `/data`). Prices are from third-party summaries of each provider's pricing in 2026; check the provider's own page before choosing:
+
+| Host | Smallest always-on option | About |
+|---|---|---|
+| Fly.io | shared-cpu-1x machine, 256 MB (512 MB recommended), 1 GB volume | $2–4 / month |
+| Render | Background worker "Starter" (0.5 CPU, 512 MB) | $7 / month |
+| Railway | Hobby plan, billed by usage | $5 / month plan, plus usage (more for 1 GB RAM) |
+| VPS (e.g. Hetzner) | smallest shared-CPU server, Docker installed | about $4–6 / month |
+
 The image is built and smoke-tested by [GitHub Actions](.github/workflows/bot.yml) on every push that touches the bot: it must start, load every module and stop cleanly without config, run as the `node` user, and contain no `.env`, `credentials/` or contract sources.
 
 ## The web app
@@ -120,6 +131,16 @@ The landing page also shows the finished demo circle (circle 5) with each payout
 - `cd web && npm test` runs unit tests: formatting, the form checks mirroring the contract's limits, and NEP-413 signature encoding.
 - `npm run e2e` drives the app in Chrome at phone size against testnet. It checks the read-only proof, then the whole member flow: create, join as two members, start, swap turns, pay both rounds, pay out, finish. It also checks that the `/link` page's signature passes NEAR's NEP-413 check against the account's real on-chain key.
 - The browser tests sign with the demo members' testnet keys through a test-only signer. It exists only in builds made with `VITE_DEV_SIGNER=1`; CI checks it isn't in the production bundle. Signing through a real wallet pop-up (NEAR Connect) isn't automated; it has to be tried by hand.
+
+**Two networks.** A switch in the header on every page: "Testnet (test wallet)" and "Mainnet (real money)". It changes the RPC, contract, token (test USDC or Circle's USDC), explorer links and the wallet's network.
+- The network is in the URL (`/testnet/c/5`, `/mainnet/c/5`), and the visitor's last choice is remembered.
+- The first switch to mainnet shows a real-money warning.
+- Until the mainnet contract is deployed, mainnet pages say so and every action is disabled; nothing is faked.
+
+**Tutorials.**
+- [/mainnet/start](web/src/pages/StartPage.tsx) is "Get started": wallets, the NEAR you need (measured on a real circle), USDC on NEAR, joining, paying, linking Telegram, missed payments, and safety.
+- `/testnet/start` is "Try it free": a test wallet, the NEAR faucet, the "Get test USDC" button, and trying a circle.
+- The screenshots come from the real app, captured by [e2e/tutorial-shots.spec.ts](web/e2e/tutorial-shots.spec.ts). The one-page guide for the real mainnet circle is [docs/mainnet-member-guide.md](docs/mainnet-member-guide.md).
 
 **Deploying on Vercel:** import the repo, set the Root Directory to `web`, and deploy. [web/vercel.json](web/vercel.json) sets the Vite build, the single-page-app rewrites and security headers. No environment variables are needed. Contract IDs and the expected code hash come from [web/src/generated/chain.json](web/src/generated/chain.json); regenerate it with `node scripts/sync-web.ts` after a redeploy.
 
@@ -161,6 +182,9 @@ Members put NEAR into one pot. When the filling window closes, the whole pot is 
 | [`circle-v2.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/circle-v2.rota-nearhack.testnet) | Circle contract (current) | **None.** Locked: [delete-key tx](https://testnet.nearblocks.io/txns/E6BvtK2voFu59TezZPqmGU6CXMk5768QzZNQkjVs2UdV) |
 | [`treasurer-v2.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/treasurer-v2.rota-nearhack.testnet) | AI treasurer for circle-v2 | One function-call key: receiver `circle-v2…`, methods `[settle]`, unlimited allowance ([created](https://testnet.nearblocks.io/txns/71VgUVH8B1LMkMzJsmA86Gj5TafnX9wGxA11bzo5d1qv)). It never had a full-access key |
 | [`usdc-mock.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/usdc-mock.rota-nearhack.testnet) | **Freely mintable test token** (symbol USDC, 6 decimals). Not real USDC and worth nothing: anyone can call `mint`. "USDC" amounts in this README are this token | Deployer's key |
+| [`harvest-v1.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/harvest-v1.rota-nearhack.testnet) | Harvest contract (group staking) | **None.** Locked: [delete-key tx](https://testnet.nearblocks.io/txns/ANbv6JwXcDQAtwQk3guBPAMFAvgRncQ1zkiTsrYByinG), before its first real pot |
+| [`harvest-treasurer-v1.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/harvest-treasurer-v1.rota-nearhack.testnet) | The bot's Harvest key | One function-call key: `stake`, `unstake`, `withdraw`, `distribute` on harvest-v1 ([created](https://testnet.nearblocks.io/txns/BnaxriHQ2cz7YzfSN2k2yxQqsvjZj8L8BbPKvFKDUBBR)) |
+| [`harvest-v0.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/harvest-v0.rota-nearhack.testnet) | Harvest live check with 0.2 test NEAR. **Not locked**; don't use it | Deployer's key |
 | [`circle-v1.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/circle-v1.rota-nearhack.testnet) | First test deployment, same code. **Superseded and not locked**; don't use it | Deployer's key |
 | [`treasurer-v1.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/treasurer-v1.rota-nearhack.testnet) | Treasurer for circle-v1 | Settle key for circle-v1 only |
 
@@ -276,6 +300,8 @@ After deployment the contract account's keys are deleted (locked), so nobody can
 |---|---|
 | `contract/circle` | Circle contract |
 | `contract/mock-ft` | Mock NEP-141 (testnet and tests only) |
+| `contract/harvest` | Harvest group-staking contract (testnet only) |
+| `contract/mock-pool` | Sandbox staking pool mirroring near/core-contracts staking-pool |
 | `contract/integration-tests` | near-workspaces sandbox tests |
 | `contract/res` | Release wasm and ABI that the scripts deploy |
 | `scripts/demo-round.ts` | The demo cycle (`npm run demo:sandbox`, `npm run demo:testnet`) |
@@ -290,7 +316,7 @@ After deployment the contract account's keys are deleted (locked), so nobody can
 | `scripts/faucet-topup.ts` | Tops up the deployer from the testnet faucet |
 | `docs/` | Design notes; `docs/testnet/transactions.json` records every testnet transaction |
 
-To rebuild the wasm: `cd contract/circle && cargo near build non-reproducible-wasm --locked --out-dir ../res` (and the same in `contract/mock-ft`).
+To rebuild the wasm: `cd contract/circle && cargo near build non-reproducible-wasm --locked --out-dir ../res` (and the same in `contract/mock-ft` and `contract/harvest`).
 
 ## Libraries
 
