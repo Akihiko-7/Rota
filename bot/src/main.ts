@@ -47,11 +47,16 @@ async function ledgerFor(net: Network, prefix: string, rpcDefault?: string): Pro
 }
 
 const MAINNET_USDC = "17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1";
-need("ROTA_CONTRACT_ID");
+// Everything is imported by now, so a missing setting is the only reason left to stop.
+const REQUIRED = ["TELEGRAM_BOT_TOKEN", "NEAR_RPC_URL", "ROTA_CONTRACT_ID", "TREASURER_ACCOUNT_ID", "TREASURER_FC_PRIVATE_KEY"];
+const missing = REQUIRED.filter((k) => !process.env[k]);
+if (missing.length) {
+  console.error(`Not starting: missing configuration: ${missing.join(", ")} (see bot/bot.env.example)`);
+  process.exit(1);
+}
 const ledgers: Ledgers = {};
 ledgers.testnet = await ledgerFor("testnet", "");
 ledgers.mainnet = await ledgerFor("mainnet", "MAINNET_", "https://rpc.mainnet.fastnear.com,https://free.rpc.fastnear.com");
-if (!ledgers.testnet) throw new Error("the testnet treasurer isn't configured (NEAR_RPC_URL, ROTA_CONTRACT_ID, TREASURER_ACCOUNT_ID, TREASURER_FC_PRIVATE_KEY)");
 if (!ledgers.mainnet) console.log("mainnet: not configured (launching soon); /circle … mainnet will say so");
 
 const store = new Store(process.env.BOT_STATE_PATH || fileURLToPath(new URL("../data/state.json", import.meta.url)));
