@@ -12,6 +12,8 @@
     "scripts"
   ],
   "scripts": {
-    "test": "cd contract && cargo test"
+    "test": "cd contract && cargo test",
+    "demo:sandbox": "node scripts/demo-round.ts --sandbox",
+    "demo:testnet": "node scripts/demo-round.ts"
   }
 }
