@@ -28,3 +28,6 @@ BRIEF.md
 # bot runtime
 bot/bot.env
 bot/data/
+
+# Fly.io app name picked by deploy/fly-deploy.sh
+deploy/.fly-app

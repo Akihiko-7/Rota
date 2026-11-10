@@ -7,3 +7,4 @@
 !bot/src/
 !scripts/package.json
 !scripts/lib/
+!deploy/fly-entrypoint.sh

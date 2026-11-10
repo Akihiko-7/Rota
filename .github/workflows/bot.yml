@@ -2,7 +2,7 @@ name: bot
 
 on:
   push:
-    paths: [Dockerfile, .dockerignore, "bot/**", "scripts/lib/**", "web/**", package.json, package-lock.json, .github/workflows/bot.yml]
+    paths: [Dockerfile, .dockerignore, fly.toml, "deploy/**", "bot/**", "scripts/lib/**", "web/**", package.json, package-lock.json, .github/workflows/bot.yml]
   workflow_dispatch:
 
 permissions:
@@ -47,6 +47,16 @@ jobs:
           out=$(docker run --rm rota-bot 2>&1 || true)
           echo "$out"
           echo "$out" | grep -q "Not starting: missing configuration: TELEGRAM_BOT_TOKEN, NEAR_RPC_URL, ROTA_CONTRACT_ID"
+      - name: Fly.io stage gives a root-owned volume to node and runs the bot as node
+        run: |
+          docker build --target fly -t rota-bot-fly .
+          out=$(docker run --rm rota-bot-fly 2>&1 || true)
+          echo "$out"
+          echo "$out" | grep -q "Not starting: missing configuration"
+          mkdir -p /tmp/flydata && sudo chown root:root /tmp/flydata && sudo chmod 755 /tmp/flydata
+          echo '{"imported":true}' | sudo tee /tmp/flydata/import-state.json >/dev/null
+          docker run --rm -v /tmp/flydata:/data rota-bot-fly sh -c 'id -un && touch /data/written && cat /data/state.json' | tee out.txt
+          grep -qx node out.txt && grep -q imported out.txt && test ! -e /tmp/flydata/import-state.json
       - name: No secrets or build output in the image
         run: |
           docker run --rm --entrypoint sh rota-bot -c '

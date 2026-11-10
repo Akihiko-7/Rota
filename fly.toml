@@ -1,0 +1,29 @@
+# Rota's treasurer bot on Fly.io: one always-on machine with a 1 GB volume
+# for its state, no public ports. deploy/fly-deploy.sh creates the app, the
+# volume and the secrets, then deploys; the app name is passed with -a.
+
+primary_region = "ams" # next to Telegram's API servers
+kill_signal = "SIGTERM"
+kill_timeout = 10
+
+[build]
+  dockerfile = "Dockerfile"
+  build-target = "fly"
+
+[env]
+  BOT_STATE_PATH = "/data/state.json"
+  # Logs what the bot sees and sends, for the demo transcript; delete this
+  # line and redeploy to turn it off.
+  BOT_TRANSCRIPT_PATH = "/data/transcript.jsonl"
+
+[mounts]
+  source = "rota_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[[restart]]
+  policy = "always"
+  retries = 10

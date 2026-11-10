@@ -14,7 +14,7 @@ Rota is a rotating savings circle (susu, tanda, chama, chit fund, hui) on NEAR. 
 > | Telegram bot (`bot/`) | Commands, status reads, reminders, auto-settle with the treasurer key, `/redteam`, account linking. Tested with a mocked LLM and Telegram, and against a local sandbox. Ran a full circle live in a test group (circle 5 on circle-v2) |
 > | AI answers (NEAR AI Cloud) | Working live with `Qwen/Qwen3.8-27B` (tool calling confirmed, about $0.0003 per question). Tests use a mocked endpoint |
 > | Web app (`web/`) | Read-only pages work without a wallet: live proof checks, the finished demo circle, any circle by number. With a wallet: create, join, deposit, start, pay, pay out, swap turns, close by vote, and the NEP-413 page for the bot's `/link`. The full flow passes end-to-end browser tests on testnet. **Not deployed yet** (ready for Vercel) |
-> | Cross-chain pay (NEAR Intents) | **Mainnet only, not built yet.** The web app shows it disabled and labelled "Mainnet only" on testnet |
+> | Cross-chain pay (NEAR Intents) | **Mainnet only. Built, not yet used with real money.** The circle page asks the 1Click API for a deposit address on Base, Arbitrum, Solana, Polygon or Ethereum, then follows the swap until the USDC arrives in the member's own NEAR account, where they press Pay as usual (two steps, see [docs/PHASE0.md](docs/PHASE0.md)). Checked against live 1Click price quotes for all five chains, and in a browser with the API mocked. The first real swap is planned for the mainnet circle on 13 Nov. On testnet it shows disabled, labelled "Mainnet only" |
 > | Harvest, group staking (`contract/harvest`) | **Testnet only.** Sandbox tests pass. Locked `harvest-v1.rota-nearhack.testnet` is running its first real pot (17 test NEAR in `aurora.pool.f863973.m0`); results will be added when it ripens |
 > | Mainnet | **Not deployed yet.** The web app shows mainnet as "launching soon" with actions disabled |
 >
@@ -102,7 +102,15 @@ Hosting options for the image (it needs about 150 MB of memory and a small volum
 | Railway | Hobby plan, billed by usage | $5 / month plan, plus usage (more for 1 GB RAM) |
 | VPS (e.g. Hetzner) | smallest shared-CPU server, Docker installed | about $4–6 / month |
 
-The image is built and smoke-tested by [GitHub Actions](.github/workflows/bot.yml) on every push that touches the bot: it must start, load every module and stop cleanly without config, run as the `node` user, and contain no `.env`, `credentials/` or contract sources.
+We use **Fly.io**. With a Fly account and [flyctl](https://fly.io/docs/flyctl/install/) installed, one command sets it up or updates it:
+
+```sh
+bash deploy/fly-deploy.sh
+```
+
+It creates the app and a 1 GB volume in Amsterdam, copies only the bot's own settings from `.env` into Fly secrets ([scripts/fly-secrets.ts](scripts/fly-secrets.ts) uses the same allowlist as the bot), deploys the image's `fly` stage on Fly's builders ([fly.toml](fly.toml): one 512 MB machine, restarted if it stops), and on the first run moves the bot's state there. Fly mounts the volume owned by root, so that stage's [entrypoint](deploy/fly-entrypoint.sh) hands `/data` to the `node` user and drops root before starting the bot.
+
+The image is built and smoke-tested by [GitHub Actions](.github/workflows/bot.yml) on every push that touches the bot: it must start, load every module and stop cleanly without config, run as the `node` user (the Fly stage too, with a root-owned volume), and contain no `.env`, `credentials/` or contract sources.
 
 ## The web app
 
