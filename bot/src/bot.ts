@@ -17,6 +17,8 @@ export interface Deps {
   store: Store;
   ai: NearAi;
   scheduler: Scheduler;
+  /** The Rota web app, for the /link signing page. */
+  webUrl?: string;
   /** Called with every message the bot receives or sends, for the demo transcript. */
   transcript?: (entry: { dir: "in" | "out"; chat: number; from?: string; text: string }) => void;
 }
@@ -215,12 +217,14 @@ export function createBot(token: string, deps: Deps, botInfo?: UserFromGetMe): B
     store.save();
     const p = linkPayload(ctx.from!.id, account, nonce);
     const you = ctx.from!.username ? `@${esc(ctx.from!.username)}` : "your Telegram";
+    const page = deps.webUrl && `${deps.webUrl.replace(/\/$/, "")}/link?${new URLSearchParams({ tg: String(ctx.from!.id), account, nonce })}`;
     await say(
       ctx,
       `🔗 <b>One more step to link ${you} to ${esc(account)}</b>\n\n` +
         `To prove the account is yours, sign a short message with your NEAR wallet. ` +
         `Until you do, the link is unconfirmed and you can't ask anyone to swap turns.\n\n` +
-        `The Rota web app will do the signing for you (coming soon). For now, wallet experts can sign this NEP-413 message:\n\n` +
+        (page ? `👉 <a href="${esc(page)}">Open the signing page</a>, sign with your wallet, then send me the /verify line it shows you.\n\n` : "") +
+        `${page ? "Or, for" : "For"} wallet experts, sign this NEP-413 message:\n\n` +
         `• Message: <code>${esc(p.message)}</code>\n` +
         `• Recipient: <code>${LINK_RECIPIENT}</code>\n` +
         `• Nonce: <code>${nonce}</code>\n\n` +

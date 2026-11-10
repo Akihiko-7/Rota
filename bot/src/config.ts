@@ -18,6 +18,7 @@ export const ALLOWED = [
   "BOT_STATE_PATH",
   "BOT_TRANSCRIPT_PATH",
   "SETTLE_INTERVAL_SEC",
+  "WEB_URL",
 ];
 
 /**

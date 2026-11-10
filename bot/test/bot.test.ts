@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { KeyPair, KeyPairSigner } from "near-api-js";
 import { applyEnv } from "../src/config.ts";
-import { linkPayload } from "../src/link.ts";
+import { linkMessage, linkPayload, LINK_RECIPIENT } from "../src/link.ts";
+import * as webLink from "../../web/src/lib/link.ts";
 import { Store } from "../src/store.ts";
 import { ALICE, BOB, BOT_INFO, FakeLedger, GROUP, harness } from "./harness.ts";
 import { ADMIN_WARNING } from "../src/bot.ts";
@@ -296,4 +297,17 @@ test("routine messages read as plain English: short names, no code or jargon", a
     assert.doesNotMatch(p, /rota\.testnet|<code>|\btx\b|settle|slot|unverified|NEP-413/i, p);
   }
   assert.ok(posts.length >= 5);
+});
+
+test("/link points to the web signing page, whose message matches the bot's exactly", async () => {
+  const h = harness({ webUrl: "https://rota.example/" });
+  const [linked] = await h.say(`/link ${BAO}`, BOB);
+  const nonce = h.store.user(BOB.id)!.nonce;
+  const href = /<a href="([^"]+)">Open the signing page<\/a>/.exec(linked)![1].replace(/&amp;/g, "&");
+  const url = new URL(href);
+  assert.equal(url.origin + url.pathname, "https://rota.example/link");
+  assert.deepEqual(Object.fromEntries(url.searchParams), { tg: String(BOB.id), account: BAO, nonce });
+  assert.equal(webLink.linkMessage(BOB.id, BAO), linkMessage(BOB.id, BAO));
+  assert.equal(webLink.LINK_RECIPIENT, LINK_RECIPIENT);
+  assert.deepEqual([...webLink.base64ToBytes(nonce)], [...Buffer.from(nonce, "base64")]);
 });

@@ -1,0 +1,149 @@
+{
+  "about": "The live demo circle (circle 5 on circle-v2.rota-nearhack.testnet), run on 10 Nov 2026 with the Telegram bot in a test group. Payouts were sent by the bot with the treasurer's settle-only key; member payments by scripts/demo-round.ts. Transcript: docs/demo/telegram-transcript.md.",
+  "contract": "circle-v2.rota-nearhack.testnet",
+  "circle_id": "5",
+  "payouts": [
+    {
+      "round": 0,
+      "hash": "9PF9pWcs8DVPt8jh4TcefvNso3BKtNMa4sKgs73hVvho"
+    },
+    {
+      "round": 1,
+      "hash": "4KqRtRERWxBc3cEpjin3CFGijDHb1QNphhgcMZWntUHR"
+    },
+    {
+      "round": 2,
+      "hash": "GTeV9pkVmNCfCujncPUj24rdpr5ff56iaEZBQH4GTvwz"
+    },
+    {
+      "round": 3,
+      "hash": "FgZXxoJm1x3RKLWJzyuf7k4sJ8K817c4ckkY3QmGLESV"
+    }
+  ],
+  "redteam_settle_attempt": {
+    "hash": "ByBUoUsvDKSXhRc4yiniKYzxwqzEnvFkBc8NdpK9oWQB",
+    "note": "settle with an injected recipient, refused by the contract (round 2 not settleable yet)"
+  },
+  "member_transactions": [
+    {
+      "label": "top up amara.rota-nearhack.testnet to its starting NEAR balance",
+      "hash": "6G9pXqSajyY9NTs9EdVGxvUvHmNaT7zF9A34SyWvpzU"
+    },
+    {
+      "label": "top up bao.rota-nearhack.testnet to its starting NEAR balance",
+      "hash": "9gb4VgF6UiRNqQfmMApZuQvVYeXs6m83YpeJSLc6krr6"
+    },
+    {
+      "label": "top up carmen.rota-nearhack.testnet to its starting NEAR balance",
+      "hash": "CrPuvMHHSHoh99b7VWiVvPn3pjktYW2gfyrLMUkmbPiw"
+    },
+    {
+      "label": "top up dara.rota-nearhack.testnet to its starting NEAR balance",
+      "hash": "9SFL2NaYnfj3GqHd9FvTTS5RU5hC5CGNES9ckN7p26jL"
+    },
+    {
+      "label": "amara.rota-nearhack.testnet creates a circle: 4 members, 10 USDC per round, 2-minute rounds, 30 s grace, 10 USDC bond for early slots",
+      "hash": "GMibQU1DoxJvHJBZ3LBf5mLYXaUaotdGmCccEQ4WEBS3"
+    },
+    {
+      "label": "amara.rota-nearhack.testnet joins",
+      "hash": "DYbuPSV7SUQTBctUvrsvFqgqZRqUGuNj9Xy2xU1Wd5JB"
+    },
+    {
+      "label": "bao.rota-nearhack.testnet joins",
+      "hash": "4qMzH3MBke11UVUzQJapFQ69qTYhxka5KX4u7QirhAMz"
+    },
+    {
+      "label": "carmen.rota-nearhack.testnet joins",
+      "hash": "BuoF7vqxEFNcbT2ojY8gntjmGAzQR5aUF2xW3S6F1Vdw"
+    },
+    {
+      "label": "dara.rota-nearhack.testnet joins",
+      "hash": "CK8bujogParoqGGtatqDoo22xYsh5DpkH1gVQ97HDTau"
+    },
+    {
+      "label": "dara.rota-nearhack.testnet posts the 10 USDC bond for an early slot",
+      "hash": "BrZ3Vin2gdVQAa27ndAHw6TRZhjXFrrKxQWfg3hQFr7U"
+    },
+    {
+      "label": "top up amara.rota-nearhack.testnet to its starting NEAR balance",
+      "hash": "BQ6yefW8TEEWbt1bADpE8BPojVFmLRLBWinLZbypV5bM"
+    },
+    {
+      "label": "top up bao.rota-nearhack.testnet to its starting NEAR balance",
+      "hash": "3dYZJsvBvopGyd65uxThnGT5cqFQhs8oW5wbknDtrRr4"
+    },
+    {
+      "label": "top up carmen.rota-nearhack.testnet to its starting NEAR balance",
+      "hash": "BEzzR9kgzGiA3F1pqavZcg7ng7o8y2H2RkSFeMxKNHj4"
+    },
+    {
+      "label": "top up dara.rota-nearhack.testnet to its starting NEAR balance",
+      "hash": "CfGrMg45YJ2NvsdVw6ssQy5sp8VpMUwkAYZawfzQ5po2"
+    },
+    {
+      "label": "amara.rota-nearhack.testnet starts the circle",
+      "hash": "6aoiUdAnYbHogXGiMGc8HYsbWjHYoTFtW72fpoJmRR1i"
+    },
+    {
+      "label": "amara.rota-nearhack.testnet pays 10 USDC",
+      "hash": "EvVY8Ps3yiGM8CeFyn5bmvYjp2xT6R8Eg1vEAyfxomhs"
+    },
+    {
+      "label": "bao.rota-nearhack.testnet pays 10 USDC",
+      "hash": "H34i14fwJqfMha3VGXdPC3uHToTemGTyfDASazbgSraS"
+    },
+    {
+      "label": "carmen.rota-nearhack.testnet pays 10 USDC",
+      "hash": "GKNNGMceHHo29etNJcjLKCvkJ8TiavDxR2yHsGoAQQAm"
+    },
+    {
+      "label": "dara.rota-nearhack.testnet pays 10 USDC",
+      "hash": "F7VYqrRLW3ygkPASzrsde3XaUEv5K8NuiE3dG4yotBEb"
+    },
+    {
+      "label": "amara.rota-nearhack.testnet pays 10 USDC",
+      "hash": "6qCwWZfWjLHuXafCVrDLXmLHCUtVfrjDwxkEPs7iE99N"
+    },
+    {
+      "label": "bao.rota-nearhack.testnet pays 10 USDC",
+      "hash": "2BREHF6ZR4BcMb14zQwiFZGSWW7nH5ayqiDbHYhYJLJF"
+    },
+    {
+      "label": "carmen.rota-nearhack.testnet pays 10 USDC",
+      "hash": "6HkFWNf3EiHJ91LXJQzxrt4oLtj1AX2E215Yc2tUgVSV"
+    },
+    {
+      "label": "amara.rota-nearhack.testnet pays 10 USDC",
+      "hash": "AZHCARpTH64AVUinE67QqR9KqX6pYkBK5dNWc5gQb2nE"
+    },
+    {
+      "label": "bao.rota-nearhack.testnet pays 10 USDC",
+      "hash": "5PNksYv8XfYgt1m88Bs6QrPaJYLywAD2chegTeTqGfDJ"
+    },
+    {
+      "label": "carmen.rota-nearhack.testnet pays 10 USDC",
+      "hash": "8MF5E9TdbHnzRYCYQnwmKB5Wn1GBwAz6WJwcvHFfWCaQ"
+    },
+    {
+      "label": "dara.rota-nearhack.testnet pays 10 USDC",
+      "hash": "BcSbX4aZCHtj1aEzwWZzJw4bBcYGHzjZFj2BMEEEaNGj"
+    },
+    {
+      "label": "amara.rota-nearhack.testnet pays 10 USDC",
+      "hash": "4gCCneknZ8u1SbUARW76TevJ4xRmzANLixpwsk5CYMC2"
+    },
+    {
+      "label": "bao.rota-nearhack.testnet pays 10 USDC",
+      "hash": "xGqWQLGR7tKRa1h3s2H12NHNmGZA53AFNSeTSDWp7gT"
+    },
+    {
+      "label": "carmen.rota-nearhack.testnet pays 10 USDC",
+      "hash": "6A6gpiNsYkud96eF8cWAoExKj7EgUqLMu7k1UznxE8Ug"
+    },
+    {
+      "label": "dara.rota-nearhack.testnet pays 10 USDC",
+      "hash": "3Jkc2j5iWRDpArijZKEc7r5Mii8BkEo1dFENBHWt8sXN"
+    }
+  ]
+}

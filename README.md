@@ -13,8 +13,8 @@ Rota is a rotating savings circle (susu, tanda, chama, chit fund, hui) on NEAR. 
 > | Treasurer key | Real and on testnet: an account whose only key can call `settle` on the circle |
 > | Telegram bot (`bot/`) | Commands, status reads, reminders, auto-settle with the treasurer key, `/redteam`, account linking. Tested with a mocked LLM and Telegram, and against a local sandbox. Ran a full circle live in a test group (circle 5 on circle-v2) |
 > | AI answers (NEAR AI Cloud) | Working live with `Qwen/Qwen3.8-27B` (tool calling confirmed, about $0.0003 per question). Tests use a mocked endpoint |
-> | Account-link signing page | **Not built yet** (web app). Links stay unverified until a NEP-413 signature is sent with `/verify` |
-> | Web app (`web/`) | Not started |
+> | Web app (`web/`) | Read-only pages work without a wallet: live proof checks, the finished demo circle, any circle by number. With a wallet: create, join, deposit, start, pay, pay out, swap turns, close by vote, and the NEP-413 page for the bot's `/link`. The full flow passes end-to-end browser tests on testnet. **Not deployed yet** (ready for Vercel) |
+> | Cross-chain pay (NEAR Intents) | **Mainnet only, not built yet.** The web app shows it disabled and labelled "Mainnet only" on testnet |
 >
 > Phase 0 findings (API checks, design consequences) are in [docs/PHASE0.md](docs/PHASE0.md).
 
@@ -92,6 +92,36 @@ docker run -d --name rota-bot --restart unless-stopped --env-file bot/bot.env -v
 ```
 
 The image is built and smoke-tested by [GitHub Actions](.github/workflows/bot.yml) on every push that touches the bot: it must start, load every module and stop cleanly without config, run as the `node` user, and contain no `.env`, `credentials/` or contract sources.
+
+## The web app
+
+[web/](web/) is a mobile-first React app (Vite). It talks to NEAR directly and has no server. No AI runs in it.
+
+**No wallet needed to look.** Judges and members can check the proof on the landing page. It reads live from chain:
+- the circle contract has 0 access keys;
+- its code hash equals the SHA-256 of the committed [contract/res/rota_circle.wasm](contract/res/rota_circle.wasm);
+- the treasurer holds one key, which can only call `settle` on that contract.
+
+The landing page also shows the finished demo circle (circle 5) with each payout's transaction, and any circle opens at `/c/<number>`.
+
+**A wallet only for actions**, through [NEAR Connect](https://docs.near.org/tools/near-connect) (`@hot-labs/near-connect`, as recommended in NEAR's docs):
+- create a circle;
+- join, post a deposit, start;
+- pay a round (on testnet, a button mints free test USDC first if needed);
+- pay out a round that the rules allow;
+- propose or accept a swap of turns;
+- vote to close a circle;
+- claim a payout that couldn't be delivered;
+- sign the bot's `/link` message on `/link?tg=…&account=…&nonce=…`, which shows the `/verify` line to send in Telegram. If the bot has `WEB_URL` set, its `/link` reply links straight to this page.
+
+**Cross-chain pay is mainnet only.** On testnet the button is shown disabled and labelled "Mainnet only", rather than faked.
+
+**Tests:**
+- `cd web && npm test` runs unit tests: formatting, the form checks mirroring the contract's limits, and NEP-413 signature encoding.
+- `npm run e2e` drives the app in Chrome at phone size against testnet. It checks the read-only proof, then the whole member flow: create, join as two members, start, swap turns, pay both rounds, pay out, finish. It also checks that the `/link` page's signature passes NEAR's NEP-413 check against the account's real on-chain key.
+- The browser tests sign with the demo members' testnet keys through a test-only signer. It exists only in builds made with `VITE_DEV_SIGNER=1`; CI checks it isn't in the production bundle. Signing through a real wallet pop-up (NEAR Connect) isn't automated; it has to be tried by hand.
+
+**Deploying on Vercel:** import the repo, set the Root Directory to `web`, and deploy. [web/vercel.json](web/vercel.json) sets the Vite build, the single-page-app rewrites and security headers. No environment variables are needed. Contract IDs and the expected code hash come from [web/src/generated/chain.json](web/src/generated/chain.json); regenerate it with `node scripts/sync-web.ts` after a redeploy.
 
 ## On testnet
 
@@ -224,6 +254,8 @@ After deployment the contract account's keys are deleted (locked), so nobody can
 | `scripts/spikes/` | Phase 0 API checks |
 | `bot/` | Telegram bot: [src/scheduler.ts](bot/src/scheduler.ts) (reminders, auto-settle), [src/bot.ts](bot/src/bot.ts) (commands, `/redteam`, AI), [src/ledger.ts](bot/src/ledger.ts) (chain access, key check), [test/](bot/test/) |
 | `Dockerfile` | Runs the bot |
+| `web/` | Web app: [src/pages/](web/src/pages/), chain reads in [src/near/chain.ts](web/src/near/chain.ts), wallet in [src/near/wallet.tsx](web/src/near/wallet.tsx), browser tests in [e2e/](web/e2e/) |
+| `docs/demo/` | The live Telegram demo transcript and the demo circle's transactions |
 | `scripts/faucet-topup.ts` | Tops up the deployer from the testnet faucet |
 | `docs/` | Design notes; `docs/testnet/transactions.json` records every testnet transaction |
 
@@ -231,7 +263,7 @@ To rebuild the wasm: `cd contract/circle && cargo near build non-reproducible-wa
 
 ## Libraries
 
-near-sdk 5.30, near-contract-standards 5.30 (mock token only), near-workspaces 0.24 and cargo-near 0.23 (tests and builds), near-api-js 7.4 and near-sandbox 0.3 (scripts and bot tests), grammY 1.46 (Telegram). AI: NEAR AI Cloud's OpenAI-compatible API, called with `fetch`. Testnet RPC: FastNEAR.
+near-sdk 5.30, near-contract-standards 5.30 (mock token only), near-workspaces 0.24 and cargo-near 0.23 (tests and builds), near-api-js 7.4 and near-sandbox 0.3 (scripts and bot tests), grammY 1.46 (Telegram), React 19, Vite 8, NEAR Connect 0.12 (`@hot-labs/near-connect`), Vitest 5 and Playwright 1.64 (web). AI: NEAR AI Cloud's OpenAI-compatible API, called with `fetch`. Testnet RPC: FastNEAR.
 
 `npm audit` reports advisories for `tar` 7.5.13, which near-sandbox pins exactly. It's a dev/test dependency, used to unpack NEAR's sandbox binary. Production installs (`npm ci --omit=dev`, as in the Dockerfile) report 0 vulnerabilities.
 

@@ -2,7 +2,7 @@ name: bot
 
 on:
   push:
-    paths: [Dockerfile, .dockerignore, "bot/**", "scripts/lib/**", package.json, package-lock.json, .github/workflows/bot.yml]
+    paths: [Dockerfile, .dockerignore, "bot/**", "scripts/lib/**", "web/**", package.json, package-lock.json, .github/workflows/bot.yml]
   workflow_dispatch:
 
 permissions:
@@ -19,6 +19,23 @@ jobs:
       - run: npm ci
       # Mocked Telegram and LLM; no secrets.
       - run: npm test -w bot
+
+  web:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.1
+      # Same install and build as Vercel (root directory web/).
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: The test-only signer is not in the production bundle
+        run: "! grep -l __ROTA_DEV_SIGNER__ dist/assets/*.js"
 
   docker-image:
     runs-on: ubuntu-24.04

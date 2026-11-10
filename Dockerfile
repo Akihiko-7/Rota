@@ -16,7 +16,6 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 COPY bot/package.json bot/
 COPY scripts/package.json scripts/
-COPY web/package.json web/
 RUN npm ci --omit=dev --workspace bot --workspace scripts && npm cache clean --force
 
 COPY scripts/lib scripts/lib

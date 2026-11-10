@@ -8,7 +8,6 @@
   },
   "workspaces": [
     "bot",
-    "web",
     "scripts"
   ],
   "scripts": {

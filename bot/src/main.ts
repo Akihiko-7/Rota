@@ -55,7 +55,7 @@ const html = { parse_mode: "HTML" as const, link_preview_options: { is_disabled:
 const scheduler = new Scheduler(ledger, store, async (chat, text) => {
   await bot.api.sendMessage(chat, text, html);
 });
-const bot = createBot(need("TELEGRAM_BOT_TOKEN"), { ledger, store, ai, scheduler, transcript });
+const bot = createBot(need("TELEGRAM_BOT_TOKEN"), { ledger, store, ai, scheduler, transcript, webUrl: process.env.WEB_URL || undefined });
 
 await bot.init();
 if (bot.botInfo.can_read_all_group_messages) {

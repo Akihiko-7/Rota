@@ -163,7 +163,7 @@ type AiReply = { status?: number; body: unknown };
  * A bot wired to the fake ledger. `aiReplies` are returned in order by the
  * fake NEAR AI endpoint; the requests it got are in `aiRequests`.
  */
-export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiReplies?: AiReply[]; admins?: number[]; budgetUsd?: number } = {}) {
+export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiReplies?: AiReply[]; admins?: number[]; budgetUsd?: number; webUrl?: string } = {}) {
   const ledger = (opts.ledger ?? new FakeLedger()) as L;
   const store = new Store();
   const sent: { chat: number; text: string }[] = [];
@@ -183,7 +183,7 @@ export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiRep
   const scheduler = new Scheduler(ledger, store, async (chat, text) => {
     sent.push({ chat, text });
   });
-  const bot = createBot("123:TEST", { ledger, store, ai, scheduler }, BOT_INFO);
+  const bot = createBot("123:TEST", { ledger, store, ai, scheduler, webUrl: opts.webUrl }, BOT_INFO);
   bot.api.config.use(async (_prev, method, payload) => {
     const p = payload as Record<string, unknown>;
     const ok = (result: unknown) => ({ ok: true as const, result }) as never;
