@@ -2167,5 +2167,35 @@
         "url": "https://testnet.nearblocks.io/txns/H6fZSW2DkshDj3Wkx2ocykzAHvAedxbJFD7b76LBop4N"
       }
     ]
+  },
+  {
+    "run": "fund members amara=1.5 bao=1.2 carmen=1.2",
+    "at": "2026-11-10T16:10:32.487Z",
+    "transactions": [
+      {
+        "label": "top up amara.rota-nearhack.testnet to 1.5 NEAR",
+        "hash": "Bs2CNWi5LdpVYybqy22d6FtfB1dwzJ6wfY8o3gwVEi7x",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "amara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/Bs2CNWi5LdpVYybqy22d6FtfB1dwzJ6wfY8o3gwVEi7x"
+      },
+      {
+        "label": "top up bao.rota-nearhack.testnet to 1.2 NEAR",
+        "hash": "3Yv32fCdsBpvapFx7c8nfGwkrGaPd2dqr1QEkiEBCczr",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "bao.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/3Yv32fCdsBpvapFx7c8nfGwkrGaPd2dqr1QEkiEBCczr"
+      },
+      {
+        "label": "top up carmen.rota-nearhack.testnet to 1.2 NEAR",
+        "hash": "3grSG3PvWoixwA9ukebz7H4CGqT3A4teRbwzDcRkKQdu",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "carmen.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/3grSG3PvWoixwA9ukebz7H4CGqT3A4teRbwzDcRkKQdu"
+      }
+    ]
   }
 ]
