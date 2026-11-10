@@ -47,6 +47,12 @@ The script checks each of these and exits non-zero if any fails. `npm run demo:t
 
 On top of that, `/ask` and messages that mention the bot go to NEAR AI Cloud (`Qwen/Qwen3.8-27B` by default, a model served from a TEE with attestation; `/attest` fetches the report with a fresh nonce). The model can read circle state and call one action, `settle_round`. **There is no fallback to another LLM provider:** if NEAR AI is unreachable or refuses the request, the bot says so and the commands keep working.
 
+**AI cost controls.** Only `/ask` and mentions call the LLM. Commands, reminders, status, settlements and `/redteam` are templates. Each question sends a short system prompt and the question, with no chat history and `max_tokens` 300, and allows at most two tool rounds. Two further limits apply:
+- A daily budget (`NEARAI_DAILY_BUDGET_USD`, default $0.50) is checked before every call against the model's published price.
+- Each user can ask 5 questions per 10 minutes.
+
+Every call's tokens and cost are logged. A typical question costs about $0.0004 with Qwen3.8-27B.
+
 ### Even a compromised bot can at worst call settle
 
 The bot server holds one NEAR key: the treasurer's function-call key. It never holds member keys or the deployer key.
@@ -85,7 +91,7 @@ docker build -t rota-bot .
 docker run -d --name rota-bot --restart unless-stopped --env-file bot/bot.env -v rota-bot:/data rota-bot
 ```
 
-The image build hasn't been tested here (no Docker on the dev machine). Its install step and module loading were checked from a clean copy of exactly the files it uses.
+The image is built and smoke-tested by [GitHub Actions](.github/workflows/bot.yml) on every push that touches the bot: it must start, load every module and stop cleanly without config, run as the `node` user, and contain no `.env`, `credentials/` or contract sources.
 
 ## On testnet
 

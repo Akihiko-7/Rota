@@ -7,7 +7,8 @@ import { KeyPair, KeyPairSigner } from "near-api-js";
 import { applyEnv } from "../src/config.ts";
 import { linkPayload } from "../src/link.ts";
 import { Store } from "../src/store.ts";
-import { ALICE, BOB, FakeLedger, GROUP, harness } from "./harness.ts";
+import { ALICE, BOB, BOT_INFO, FakeLedger, GROUP, harness } from "./harness.ts";
+import { ADMIN_WARNING } from "../src/bot.ts";
 
 const AMARA = "amara.rota.testnet";
 const BAO = "bao.rota.testnet";
@@ -225,4 +226,48 @@ test("a completed circle is announced once", async () => {
     ["🏁 <b>Test circle</b> is complete: 2 rounds, every member received the pot once. Bonds left over were returned."],
   );
   assert.deepEqual(await h.tick(), []);
+});
+
+const answer = (text: string, tokens = { prompt_tokens: 400, completion_tokens: 80 }) => ({
+  body: { choices: [{ message: { role: "assistant", content: text } }], usage: tokens },
+});
+
+test("AI calls are short and costed against the daily budget", async () => {
+  // 400 in + 80 out at Qwen3.8-27B prices ≈ $0.000124; a $0.0001 budget allows one call.
+  const h = harness({ aiReplies: [answer("Nobody owes anything.")], budgetUsd: 0.0001 });
+  await following(h);
+  assert.equal((await h.say("/ask anything due?"))[0], "Nobody owes anything.");
+  assert.equal(h.aiRequests[0].body.max_tokens, 300);
+  assert.equal((h.aiRequests[0].body.messages as unknown[]).length, 2, "system prompt + question, no chat history");
+  assert.ok(String((h.aiRequests[0].body.messages as { content: string }[])[0].content).length < 600, "short system prompt");
+
+  const [capped] = await h.say("/ask and now?");
+  assert.match(capped, /Today's AI budget \(\$0\.00\) is used up; it resets at 00:00 UTC/);
+  assert.equal(h.aiRequests.length, 1, "no request once the budget is spent");
+});
+
+test("each user gets 5 AI questions per 10 minutes", async () => {
+  const h = harness({ aiReplies: Array.from({ length: 6 }, () => answer("ok")) });
+  await following(h);
+  for (let i = 0; i < 5; i++) assert.equal((await h.say(`/ask question ${i}`))[0], "ok");
+  assert.match((await h.say("/ask one more"))[0], /You've asked 5 AI questions in 10 minutes; try again in/);
+  assert.equal(h.aiRequests.length, 5);
+  assert.equal((await h.say("/ask from bob", BOB))[0], "ok", "the limit is per user");
+});
+
+test("the model's **bold** becomes HTML, everything else is escaped", async () => {
+  const h = harness({ aiReplies: [answer("**bao** owes <10 USDC>")] });
+  await following(h);
+  assert.equal((await h.say("/ask who?"))[0], "<b>bao</b> owes &lt;10 USDC&gt;");
+});
+
+test("the bot warns when it is made a group admin", async () => {
+  const h = harness();
+  assert.deepEqual(await h.botStatus("administrator"), [ADMIN_WARNING]);
+  assert.deepEqual(await h.botStatus("member"), []);
+
+  const admin = harness({ admins: [ALICE.id, BOT_INFO.id] });
+  const out = await admin.say("/circle 1");
+  assert.deepEqual(out.slice(0, 1), [ADMIN_WARNING]);
+  assert.match(out[1], /now follows/);
 });

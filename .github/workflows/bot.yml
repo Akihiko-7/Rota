@@ -1,0 +1,40 @@
+name: bot
+
+on:
+  push:
+    paths: [Dockerfile, .dockerignore, "bot/**", "scripts/lib/**", package.json, package-lock.json, .github/workflows/bot.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.1
+      - run: npm ci
+      # Mocked Telegram and LLM; no secrets.
+      - run: npm test -w bot
+
+  docker-image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t rota-bot .
+      - name: Starts, loads every module, and stops cleanly without config
+        run: |
+          out=$(docker run --rm rota-bot 2>&1 || true)
+          echo "$out"
+          echo "$out" | grep -q "NEAR_RPC_URL is not set"
+      - name: No secrets or build output in the image
+        run: |
+          docker run --rm --entrypoint sh rota-bot -c '
+            set -e
+            test ! -e /app/.env && test ! -e /app/credentials && test ! -e /app/contract && test ! -e /app/BRIEF.md
+            test ! -e /app/node_modules/near-sandbox
+            id -un | grep -qx node
+            echo "image contents ok"'

@@ -12,7 +12,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Chain, type Network } from "../../scripts/lib/near.ts";
 import { NearAi } from "./ai.ts";
-import { createBot } from "./bot.ts";
+import { ADMIN_WARNING, createBot } from "./bot.ts";
 import { applyEnv } from "./config.ts";
 import { NearLedger } from "./ledger.ts";
 import { Scheduler } from "./scheduler.ts";
@@ -37,7 +37,13 @@ const ledger = new NearLedger(chain, need("ROTA_CONTRACT_ID"), need("ROTA_TOKEN_
 console.log(`treasurer key: ${await ledger.checkTreasurerKey()}`);
 
 const store = new Store(process.env.BOT_STATE_PATH || fileURLToPath(new URL("../data/state.json", import.meta.url)));
-const ai = new NearAi({ apiKey: process.env.NEARAI_API_KEY, baseUrl: process.env.NEARAI_BASE_URL || undefined, model: process.env.NEARAI_MODEL || DEFAULT_MODEL });
+const ai = new NearAi({
+  apiKey: process.env.NEARAI_API_KEY,
+  baseUrl: process.env.NEARAI_BASE_URL || undefined,
+  model: process.env.NEARAI_MODEL || DEFAULT_MODEL,
+  dailyBudgetUsd: Number(process.env.NEARAI_DAILY_BUDGET_USD || 0.5),
+  spend: store.spendBook(),
+});
 
 const transcriptPath = process.env.BOT_TRANSCRIPT_PATH;
 if (transcriptPath) mkdirSync(dirname(transcriptPath), { recursive: true });
@@ -73,6 +79,14 @@ await bot.api.setMyCommands([
   { command: "help", description: "What I can do" },
 ]);
 
+for (const chat of Object.keys(store.state.groups)) {
+  const me = await bot.api.getChatMember(chat, bot.botInfo.id).catch(() => undefined);
+  if (me?.status === "administrator") {
+    console.warn(`WARNING: @${bot.botInfo.username} is an admin in chat ${chat}, so Telegram sends it every message despite privacy mode.`);
+    await bot.api.sendMessage(chat, ADMIN_WARNING).catch(() => {});
+  }
+}
+
 const intervalSec = Number(process.env.SETTLE_INTERVAL_SEC || 15);
 scheduler.start(intervalSec * 1000);
 const stop = () => {
@@ -83,5 +97,5 @@ process.once("SIGINT", stop);
 process.once("SIGTERM", stop);
 await bot.start({
   onStart: (me) =>
-    console.log(`@${me.username} running · privacy mode on · AI model ${ai.model} · checking circles every ${intervalSec}s · following ${Object.keys(store.state.groups).length} chat(s)`),
+    console.log(`@${me.username} running · privacy mode on · AI model ${ai.model} (budget $${ai.dailyBudgetUsd}/day) · checking circles every ${intervalSec}s · following ${Object.keys(store.state.groups).length} chat(s)`),
 });

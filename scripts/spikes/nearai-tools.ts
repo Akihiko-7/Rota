@@ -1,80 +1,79 @@
-// Phase 0 spike: does a NEAR AI Cloud model do OpenAI-style tool calling?
+// Spike: does a NEAR AI Cloud model do OpenAI-style tool calling?
 //
-// 1. Lists models (public endpoint) and shows the ones that report `tools`.
-// 2. Sends one question with a `get_circle_status` tool and expects a tool call.
-// 3. Returns a fake tool result and expects a final answer that uses it.
-// If step 2 yields no tool call, retries in JSON mode (the fallback plan).
+// Uses as few paid calls as possible: one question that should produce a tool
+// call, then one call with a fake tool result for the final answer. Prints
+// token usage and cost from the model's published price.
 //
-// Run: NEARAI_API_KEY=... [NEARAI_MODEL=...] node scripts/spikes/nearai-tools.ts
+// Run: node --env-file=.env scripts/spikes/nearai-tools.ts [model-id] [--no-think]
+//   --no-think  asks the model's chat template to skip reasoning
 
-const BASE = process.env.NEARAI_BASE_URL ?? "https://cloud-api.near.ai/v1";
+const BASE = process.env.NEARAI_BASE_URL || "https://cloud-api.near.ai/v1";
 const KEY = process.env.NEARAI_API_KEY;
+const model = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? process.env.NEARAI_MODEL ?? "Qwen/Qwen3.8-27B";
+const noThink = process.argv.includes("--no-think");
 
 const models = (await (await fetch(`${BASE}/models`)).json()) as any;
-if (!models.data) throw new Error(`model list failed: ${JSON.stringify(models)}`);
-const withTools = models.data.filter((m: any) => (m.supported_features ?? []).includes("tools"));
-console.log(`${models.data.length} models, ${withTools.length} report tool support:`);
-for (const m of withTools) console.log(`  ${m.id}  (${m.name ?? ""})`);
-
-if (!KEY) {
-  console.log("\nNEARAI_API_KEY not set; stopping after the model list.");
-  process.exit(0);
-}
-const model = process.env.NEARAI_MODEL ?? withTools[0]?.id;
-console.log(`\nUsing ${model}`);
+const info = models.data?.find((m: any) => m.id === model);
+if (!info) throw new Error(`${model} is not in the model list`);
+const price = { in: Number(info.pricing.prompt), out: Number(info.pricing.completion) };
+console.log(`${model}: tools ${info.supported_features?.includes("tools")}, $${info.pricing.input}/M in, $${info.pricing.output}/M out`);
+if (!KEY) throw new Error("NEARAI_API_KEY is not set");
 
 const tools = [
   {
     type: "function",
     function: {
-      name: "get_circle_status",
-      description: "Read a savings circle's current round, who has paid, and the next recipient.",
-      parameters: {
-        type: "object",
-        properties: { circle_id: { type: "string" } },
-        required: ["circle_id"],
-      },
+      name: "get_round_status",
+      description: "Current round: who paid, who hasn't, recipient.",
+      parameters: { type: "object", properties: { circle_id: { type: "string" } } },
     },
   },
 ];
+let spent = 0;
 
-async function chat(body: Record<string, unknown>) {
+async function chat(messages: unknown[]) {
   const res = await fetch(`${BASE}/chat/completions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, max_tokens: 400, ...body }),
+    body: JSON.stringify({
+      model,
+      messages,
+      tools,
+      max_tokens: 300,
+      temperature: 0.2,
+      ...(noThink ? { chat_template_kwargs: { enable_thinking: false } } : {}),
+    }),
   });
   const json = (await res.json()) as any;
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${JSON.stringify(json)}`);
-  return json;
+  const u = json.usage ?? {};
+  const cost = (u.prompt_tokens ?? 0) * price.in + (u.completion_tokens ?? 0) * price.out;
+  spent += cost;
+  const msg = json.choices[0].message;
+  const reasoning = msg.reasoning_content ?? msg.reasoning ?? "";
+  console.log(
+    `  call: ${u.prompt_tokens} in + ${u.completion_tokens} out tokens = $${cost.toFixed(6)}; finish ${json.choices[0].finish_reason}; reasoning ${reasoning.length} chars`,
+  );
+  return msg;
 }
 
 const messages: any[] = [
-  { role: "system", content: "You are the treasurer of a savings circle. Use tools to read state; never guess." },
-  { role: "user", content: "Who still has to pay in circle 7?" },
+  { role: "system", content: "Treasurer of savings circle 7. Use tools; don't guess. Answer in one sentence." },
+  { role: "user", content: "Who still has to pay?" },
 ];
-
-const first = await chat({ messages, tools, tool_choice: "auto" });
-const call = first.choices[0].message.tool_calls?.[0];
-if (call) {
-  console.log("tool call:", call.function.name, call.function.arguments);
-  messages.push(first.choices[0].message, {
-    role: "tool",
-    tool_call_id: call.id,
-    content: JSON.stringify({ round: 2, unpaid: ["bola.testnet"], next_recipient: "chidi.testnet" }),
-  });
-  const second = await chat({ messages, tools });
-  console.log("final answer:", second.choices[0].message.content);
-  console.log("RESULT: native tool calling works");
-} else {
-  console.log("no tool call; reply was:", first.choices[0].message.content);
-  const json = await chat({
-    messages: [
-      ...messages.slice(0, 1),
-      { role: "user", content: 'Reply only with JSON {"tool": "get_circle_status", "circle_id": "..."} for: Who still has to pay in circle 7?' },
-    ],
-    response_format: { type: "json_object" },
-  });
-  console.log("JSON mode reply:", json.choices[0].message.content);
-  console.log("RESULT: fall back to JSON mode");
+const first = await chat(messages);
+const call = first.tool_calls?.[0];
+if (!call) {
+  console.log(`no tool call; content: ${JSON.stringify(first.content)}`);
+  console.log(`RESULT: no tool call. Spent $${spent.toFixed(6)}`);
+  process.exit(1);
 }
+console.log(`  tool call: ${call.function.name}(${call.function.arguments})`);
+messages.push(first, {
+  role: "tool",
+  tool_call_id: call.id,
+  content: JSON.stringify({ round: 2, unpaid: ["bao.testnet"], recipient: "carmen.testnet" }),
+});
+const second = await chat(messages);
+console.log(`  answer: ${JSON.stringify(second.content)}`);
+console.log(`RESULT: tool calling ${second.content?.includes("bao") ? "works" : "returned no usable answer"}. Spent $${spent.toFixed(6)}`);

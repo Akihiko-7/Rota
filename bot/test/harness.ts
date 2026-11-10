@@ -163,7 +163,7 @@ type AiReply = { status?: number; body: unknown };
  * A bot wired to the fake ledger. `aiReplies` are returned in order by the
  * fake NEAR AI endpoint; the requests it got are in `aiRequests`.
  */
-export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiReplies?: AiReply[]; admins?: number[] } = {}) {
+export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiReplies?: AiReply[]; admins?: number[]; budgetUsd?: number } = {}) {
   const ledger = (opts.ledger ?? new FakeLedger()) as L;
   const store = new Store();
   const sent: { chat: number; text: string }[] = [];
@@ -178,7 +178,8 @@ export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiRep
     return new Response(JSON.stringify(next.body), { status: next.status ?? 200, headers: { "content-type": "application/json" } });
   }) as typeof fetch;
 
-  const ai = new NearAi({ apiKey: "test-key", model: "test/model", fetch: fakeFetch });
+  // Qwen3.8-27B's published price, so no model-list request is made.
+  const ai = new NearAi({ apiKey: "test-key", model: "test/model", fetch: fakeFetch, price: { in: 4e-8, out: 1.35e-6 }, dailyBudgetUsd: opts.budgetUsd });
   const scheduler = new Scheduler(ledger, store, async (chat, text) => {
     sent.push({ chat, text });
   });
@@ -224,5 +225,20 @@ export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiRep
     return sent.splice(0).map((m) => m.text);
   }
 
-  return { bot, ledger, store, sent, say, tick, aiRequests };
+  /** Delivers a my_chat_member update: the bot's own status in GROUP changed. */
+  async function botStatus(status: string) {
+    await bot.handleUpdate({
+      update_id: ++updateId,
+      my_chat_member: {
+        chat: { id: GROUP, type: "group", title: "Test circle" },
+        from: { ...ALICE, is_bot: false },
+        date: 0,
+        old_chat_member: { status: "member", user: { id: BOT_INFO.id, is_bot: true, first_name: "Rota" } },
+        new_chat_member: { status, user: { id: BOT_INFO.id, is_bot: true, first_name: "Rota" } },
+      },
+    } as never);
+    return sent.splice(0).map((m) => m.text);
+  }
+
+  return { bot, ai, ledger, store, sent, say, tick, botStatus, aiRequests };
 }

@@ -34,9 +34,11 @@ export interface State {
   watches: Record<string, Watch>;
   /** `${circleId}:${round}` → the settle transaction the bot sent. */
   settleTx: Record<string, { hash: string; url?: string }>;
+  /** NEAR AI spend for one UTC day, for the daily budget cap. */
+  aiSpend: { day: string; usd: number };
 }
 
-const empty = (): State => ({ groups: {}, users: {}, watches: {}, settleTx: {} });
+const empty = (): State => ({ groups: {}, users: {}, watches: {}, settleTx: {}, aiSpend: { day: "", usd: 0 } });
 
 export class Store {
   readonly state: State;
@@ -72,6 +74,19 @@ export class Store {
 
   user(userId: number): UserLink | undefined {
     return this.state.users[String(userId)];
+  }
+
+  /** The daily NEAR AI spend, kept in this file so restarts don't reset it. */
+  spendBook(): { today(): number; add(usd: number): void } {
+    const day = () => new Date().toISOString().slice(0, 10);
+    return {
+      today: () => (this.state.aiSpend.day === day() ? this.state.aiSpend.usd : 0),
+      add: (usd: number) => {
+        if (this.state.aiSpend.day !== day()) this.state.aiSpend = { day: day(), usd: 0 };
+        this.state.aiSpend.usd += usd;
+        this.save();
+      },
+    };
   }
 
   /** Telegram username linked to `accountId`, if any. */

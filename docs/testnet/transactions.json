@@ -1259,5 +1259,91 @@
         "note": "Succeeded: the balance reached the deployer. The script first flagged it as failed because the gas refund to the deleted account fails by design."
       }
     ]
+  },
+  {
+    "run": "demo setup circle-v2.rota-nearhack.testnet circle 3",
+    "at": "2026-11-10T06:38:53.877Z",
+    "transactions": [
+      {
+        "label": "top up amara.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "HjrQbT6JEpFs1w2KPTayQbtYcj2K1a32CPiV7FERL3ZU",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "amara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/HjrQbT6JEpFs1w2KPTayQbtYcj2K1a32CPiV7FERL3ZU"
+      },
+      {
+        "label": "top up bao.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "DbRBnZA6eV1PSFwafiwBYYjLJsz1uudqryuLx3EKgVQB",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "bao.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/DbRBnZA6eV1PSFwafiwBYYjLJsz1uudqryuLx3EKgVQB"
+      },
+      {
+        "label": "top up carmen.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "2RYtWfsw2Pvj7rm66gDETHjoeWKpts7iX8qgwiDLdo88",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "carmen.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/2RYtWfsw2Pvj7rm66gDETHjoeWKpts7iX8qgwiDLdo88"
+      },
+      {
+        "label": "top up dara.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "6bqYToMKDZZAktPUpFGwhbeVrNypM2CmZPmU4cYuxNXN",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "dara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/6bqYToMKDZZAktPUpFGwhbeVrNypM2CmZPmU4cYuxNXN"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet creates a circle: 4 members, 10 USDC per round, 2-minute rounds, 30 s grace, 10 USDC bond for early slots",
+        "hash": "55x3K6kmeJ8v1w97VmGfBfsrvBqj68GWn1YapACVQuKe",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/55x3K6kmeJ8v1w97VmGfBfsrvBqj68GWn1YapACVQuKe"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet joins",
+        "hash": "9wfiK3PrgdQcHMCSz7BkRLF7iFkCyKwmp23FzNXyKuYd",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/9wfiK3PrgdQcHMCSz7BkRLF7iFkCyKwmp23FzNXyKuYd"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet joins",
+        "hash": "Ai41MmkgrSEYC4CYHQU6G3BkZbeujYbYshomgKbM6r81",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/Ai41MmkgrSEYC4CYHQU6G3BkZbeujYbYshomgKbM6r81"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet joins",
+        "hash": "5MHVqyY98K457hgVRW38bQAL26iNtWSV8CpAexiaE8SC",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/5MHVqyY98K457hgVRW38bQAL26iNtWSV8CpAexiaE8SC"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet joins",
+        "hash": "3H7kMfmed69uwhrUtxgnnXh1q5BLzkTLJq4mTxB9PJ41",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/3H7kMfmed69uwhrUtxgnnXh1q5BLzkTLJq4mTxB9PJ41"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet posts the 10 USDC bond for an early slot",
+        "hash": "DzxHBtS2tS49vZbgz4Jrwt2BkCgUECinuYkC3sJQTb7q",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/DzxHBtS2tS49vZbgz4Jrwt2BkCgUECinuYkC3sJQTb7q"
+      }
+    ]
   }
 ]
