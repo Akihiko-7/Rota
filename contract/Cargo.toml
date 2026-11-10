@@ -2,6 +2,16 @@
 resolver = "2"
 members = ["circle", "mock-ft", "integration-tests"]
 
+# Keep test builds small: line tables are enough for backtraces, and
+# incremental caches (same as CARGO_INCREMENTAL=0) only help edit-rebuild loops.
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.test]
+debug = "line-tables-only"
+incremental = false
+
 [profile.release]
 codegen-units = 1
 opt-level = "z"
