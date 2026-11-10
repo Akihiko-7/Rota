@@ -668,6 +668,18 @@ pre {
   margin-top: 14px;
   padding-top: 6px;
 }
+.xchain {
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px 16px 16px;
+  min-width: 0;
+}
+.xchain .deposit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
 .people li,
 .order li {
   display: flex;

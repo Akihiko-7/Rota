@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CrossChainPay } from "../components/CrossChain";
 import { Card, ErrorNote, ExplorerLink, LaunchingSoon, Loading, TestWallet, TxButton } from "../components/ui";
 import { isLive } from "../config";
 import { every, list, short, span, usdc, when } from "../lib/format";
@@ -214,15 +215,25 @@ function PayBox({ c, reload }: { c: Circle; reload: () => void }) {
         <TxButton tx={tx.pay(c.id, "contribution", c.contribution)} disabled={short_} onDone={() => (reload(), void reloadBalance())}>
           Pay {usdc(need)} now
         </TxButton>
-        <button className="btn secondary" disabled aria-describedby="xchain">
-          Pay from another chain
-        </button>
-        <p id="xchain" className="small muted">
-          <span className="tag">Mainnet only</span>{" "}
-          {net === "testnet"
-            ? "Paying with USDC from another chain uses NEAR Intents, which only works on mainnet. It isn't available on this test network."
-            : `Paying with USDC from another chain through NEAR Intents isn't built yet. For now, get ${cfg.tokenNote} on NEAR first (see Get started).`}
-        </p>
+        {net === "mainnet" && data && short_ && (
+          <CrossChainPay
+            amount={need - data.balance}
+            accountId={accountId!}
+            registered={data.registered}
+            swapKey={`rota:xchain:${cfg.contractId}:${c.id}:${c.current_round}:${accountId}`}
+            onArrived={() => void reloadBalance()}
+          />
+        )}
+        {net === "testnet" && (
+          <>
+            <button className="btn secondary" disabled aria-describedby="xchain">
+              Pay from another chain
+            </button>
+            <p id="xchain" className="small muted">
+              <span className="tag">Mainnet only</span> Paying with USDC from another chain uses NEAR Intents, which only works on mainnet. It isn't available on this test network.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

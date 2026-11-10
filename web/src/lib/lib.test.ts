@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { KeyPair, KeyPairSigner } from "near-api-js";
 import { every, list, parseUsdc, short, span, usdc } from "./format";
 import { base64ToBytes, linkMessage, LINK_RECIPIENT, signatureBase64 } from "./link";
+import { getQuote, NEAR_USDC_ASSET, ORIGINS, quoteRequest } from "./oneclick";
 import { txs, validate } from "./rota";
 import networks from "../generated/networks.json";
 
@@ -71,5 +72,41 @@ describe("networks", () => {
     expect(networks.mainnet.explorer).toBe("https://nearblocks.io");
     expect(() => txs(networks.mainnet).faucet("a.near", true)).toThrow(/only exists on testnet/);
     expect(txs(networks.testnet).pay("1", "contribution", "1").receiverId).toBe("usdc-mock.rota-nearhack.testnet");
+  });
+});
+
+describe("cross-chain pay (1Click)", () => {
+  const base = ORIGINS.find((o) => o.id === "base")!;
+  const input = { origin: base, amount: 1_000_000n, recipient: "amara.near", refundTo: "0x2527D02599Ba641c19FEa793cD0F167589a0f10D", dry: false };
+  const reply = (status: number, body: unknown) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+
+  it("asks for an exact amount of USDC on NEAR, delivered to the member's own account", () => {
+    const r = quoteRequest(input, Date.parse("2026-11-13T12:00:00Z"));
+    expect(r).toMatchObject({
+      swapType: "EXACT_OUTPUT",
+      originAsset: base.assetId,
+      destinationAsset: NEAR_USDC_ASSET,
+      amount: "1000000",
+      recipient: "amara.near",
+      recipientType: "DESTINATION_CHAIN",
+      refundTo: input.refundTo,
+      refundType: "ORIGIN_CHAIN",
+      deadline: "2026-11-13T12:20:00.000Z",
+    });
+    expect(r).not.toHaveProperty("customRecipientMsg");
+    expect(NEAR_USDC_ASSET).toBe(`nep141:${networks.mainnet.tokenId}`);
+  });
+  it("checks the refund address and the quoted amount", async () => {
+    await expect(getQuote({ ...input, refundTo: "amara.near" })).rejects.toThrow(/Base address/);
+    const quote = { depositAddress: "0xabc", amountIn: "1010309", amountInFormatted: "1.010309", minAmountIn: "1000205", amountOut: "1000000", amountOutFormatted: "1.0", deadline: "", timeEstimate: 35 };
+    await expect(getQuote(input, reply(201, { quote }))).resolves.toMatchObject({ depositAddress: "0xabc" });
+    await expect(getQuote(input, reply(201, { quote: { ...quote, amountOut: "990000" } }))).rejects.toThrow(/different amount/);
+    await expect(getQuote(input, reply(201, { quote: { ...quote, depositAddress: undefined } }))).rejects.toThrow(/deposit address/);
+    await expect(getQuote(input, reply(400, { message: "recipient not found" }))).rejects.toThrow("NEAR Intents: recipient not found");
+  });
+  it("accepts each origin chain's address format", () => {
+    expect(ORIGINS.find((o) => o.id === "sol")!.isAddress("9WL2A89YBr6X47ABKYNzPentWiBA3H8tpaiuf5CaYHx6")).toBe(true);
+    expect(ORIGINS.find((o) => o.id === "sol")!.isAddress(input.refundTo)).toBe(false);
+    expect(base.isAddress("0x2527d02599ba641c19fea793cd0f167589a0f10")).toBe(false);
   });
 });
