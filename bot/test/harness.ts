@@ -203,6 +203,7 @@ export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiRep
   async function say(text: string, from = ALICE, chat = GROUP, extra: Record<string, unknown> = {}) {
     const command = text.startsWith("/") ? [{ type: "bot_command", offset: 0, length: text.split(/\s/)[0].length }] : [];
     const at = text.indexOf(`@${BOT_INFO.username}`);
+    // How Telegram marks an @mention (privacy mode keeps these from reaching the bot in groups).
     const mention = !text.startsWith("/") && at >= 0 ? [{ type: "mention", offset: at, length: BOT_INFO.username.length + 1 }] : [];
     await bot.handleUpdate({
       update_id: ++updateId,

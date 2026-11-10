@@ -1345,5 +1345,419 @@
         "url": "https://testnet.nearblocks.io/txns/DzxHBtS2tS49vZbgz4Jrwt2BkCgUECinuYkC3sJQTb7q"
       }
     ]
+  },
+  {
+    "run": "dissolve circle-v2.rota-nearhack.testnet circle 3",
+    "at": "2026-11-10T07:33:36.080Z",
+    "transactions": [
+      {
+        "label": "dara.rota-nearhack.testnet proposes to dissolve",
+        "hash": "FoQZdmig1pwtbguxiq5EUnHeaaABEXdebNuDCwr4oVpg",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/FoQZdmig1pwtbguxiq5EUnHeaaABEXdebNuDCwr4oVpg"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet votes to dissolve",
+        "hash": "9z3itvbh1eCiGeKQbEinJwYvumWAquEEq6zmbA6AwA5K",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/9z3itvbh1eCiGeKQbEinJwYvumWAquEEq6zmbA6AwA5K"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet votes to dissolve",
+        "hash": "6oigkGWFXwop84yuDqLn6JNEHXZcMTwctFq7nQAz6amd",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/6oigkGWFXwop84yuDqLn6JNEHXZcMTwctFq7nQAz6amd"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet votes to dissolve",
+        "hash": "BNrkHUsGapVr4FYxG7HZoAscq4kacC1N5ABgKV9LuFcY",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/BNrkHUsGapVr4FYxG7HZoAscq4kacC1N5ABgKV9LuFcY"
+      }
+    ]
+  },
+  {
+    "run": "demo setup circle-v2.rota-nearhack.testnet circle 4",
+    "at": "2026-11-10T07:37:28.370Z",
+    "transactions": [
+      {
+        "label": "top up amara.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "7fvfYtHxax5p31ePUSfHRVNKtGV1XwcG3rpZiDYDxoZa",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "amara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/7fvfYtHxax5p31ePUSfHRVNKtGV1XwcG3rpZiDYDxoZa"
+      },
+      {
+        "label": "top up bao.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "9SsypzQRKz4B4gn1TaYTtT8ss7gpHopcXr2AL5DTgfao",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "bao.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/9SsypzQRKz4B4gn1TaYTtT8ss7gpHopcXr2AL5DTgfao"
+      },
+      {
+        "label": "top up carmen.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "CM7f3JGrgDn92R6jzt6Zh3GTPocYXR9aZf7WgKUSYCMc",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "carmen.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/CM7f3JGrgDn92R6jzt6Zh3GTPocYXR9aZf7WgKUSYCMc"
+      },
+      {
+        "label": "top up dara.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "4CEC4dk2gcnwLp2kKVqRq6G7vRadJ78nbcH9hnaXBxfQ",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "dara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/4CEC4dk2gcnwLp2kKVqRq6G7vRadJ78nbcH9hnaXBxfQ"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet creates a circle: 4 members, 10 USDC per round, 2-minute rounds, 30 s grace, 10 USDC bond for early slots",
+        "hash": "8XFDp3aTF4pAMqAYQWxtrfs9eGvDGZvzYc1bCZeEYHYX",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/8XFDp3aTF4pAMqAYQWxtrfs9eGvDGZvzYc1bCZeEYHYX"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet joins",
+        "hash": "2A1Tp2yfuhjZrHhkHYqsmmyENr7UAb5f9Cd1FZWDLPBa",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/2A1Tp2yfuhjZrHhkHYqsmmyENr7UAb5f9Cd1FZWDLPBa"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet joins",
+        "hash": "86RCNJ1jsr4s4Y6Y4PDBMtXRTPK6iJXrEuLGjDmh7RRz",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/86RCNJ1jsr4s4Y6Y4PDBMtXRTPK6iJXrEuLGjDmh7RRz"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet joins",
+        "hash": "ErEfPRRv2Rbby7ze1doWiV2nJchtvCZW963hyVCrfF7s",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/ErEfPRRv2Rbby7ze1doWiV2nJchtvCZW963hyVCrfF7s"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet joins",
+        "hash": "G2fiHpYiqbFpMVzxPrHi5p1a2PoVYxLQqqjnM8HrRRoC",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/G2fiHpYiqbFpMVzxPrHi5p1a2PoVYxLQqqjnM8HrRRoC"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet posts the 10 USDC bond for an early slot",
+        "hash": "75AeXUE6LKBe1FHqS6VN647Sn29Vc3xuGCUWFgBqPCnc",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/75AeXUE6LKBe1FHqS6VN647Sn29Vc3xuGCUWFgBqPCnc"
+      }
+    ]
+  },
+  {
+    "run": "dissolve circle-v2.rota-nearhack.testnet circle 4",
+    "at": "2026-11-10T09:51:01.972Z",
+    "transactions": [
+      {
+        "label": "dara.rota-nearhack.testnet proposes to dissolve",
+        "hash": "FcYtdXCGxK5FRCn9vcTpXWUmsBV8L4P9WoUiw3ro8ygS",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/FcYtdXCGxK5FRCn9vcTpXWUmsBV8L4P9WoUiw3ro8ygS"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet votes to dissolve",
+        "hash": "EU31AQmBMCkP1tQSrvpoT5G8RWQY7rrEGWAKKwQa7YQp",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/EU31AQmBMCkP1tQSrvpoT5G8RWQY7rrEGWAKKwQa7YQp"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet votes to dissolve",
+        "hash": "DwfjmtRDjVtWPmA1ZrGJ8nnQZjhozPnoEYrb2Yt2V5gV",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/DwfjmtRDjVtWPmA1ZrGJ8nnQZjhozPnoEYrb2Yt2V5gV"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet votes to dissolve",
+        "hash": "6B78kbRoQZR5XxckBJReBMnvTAu7a9xfFoUrG9nwys1d",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/6B78kbRoQZR5XxckBJReBMnvTAu7a9xfFoUrG9nwys1d"
+      }
+    ]
+  },
+  {
+    "run": "demo setup circle-v2.rota-nearhack.testnet circle 5",
+    "at": "2026-11-10T09:51:44.171Z",
+    "transactions": [
+      {
+        "label": "top up amara.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "6G9pXqSajyY9NTs9EdVGxvUvHmNaT7zF9A34SyWvpzU",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "amara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/6G9pXqSajyY9NTs9EdVGxvUvHmNaT7zF9A34SyWvpzU"
+      },
+      {
+        "label": "top up bao.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "9gb4VgF6UiRNqQfmMApZuQvVYeXs6m83YpeJSLc6krr6",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "bao.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/9gb4VgF6UiRNqQfmMApZuQvVYeXs6m83YpeJSLc6krr6"
+      },
+      {
+        "label": "top up carmen.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "CrPuvMHHSHoh99b7VWiVvPn3pjktYW2gfyrLMUkmbPiw",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "carmen.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/CrPuvMHHSHoh99b7VWiVvPn3pjktYW2gfyrLMUkmbPiw"
+      },
+      {
+        "label": "top up dara.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "9SFL2NaYnfj3GqHd9FvTTS5RU5hC5CGNES9ckN7p26jL",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "dara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/9SFL2NaYnfj3GqHd9FvTTS5RU5hC5CGNES9ckN7p26jL"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet creates a circle: 4 members, 10 USDC per round, 2-minute rounds, 30 s grace, 10 USDC bond for early slots",
+        "hash": "GMibQU1DoxJvHJBZ3LBf5mLYXaUaotdGmCccEQ4WEBS3",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/GMibQU1DoxJvHJBZ3LBf5mLYXaUaotdGmCccEQ4WEBS3"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet joins",
+        "hash": "DYbuPSV7SUQTBctUvrsvFqgqZRqUGuNj9Xy2xU1Wd5JB",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/DYbuPSV7SUQTBctUvrsvFqgqZRqUGuNj9Xy2xU1Wd5JB"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet joins",
+        "hash": "4qMzH3MBke11UVUzQJapFQ69qTYhxka5KX4u7QirhAMz",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/4qMzH3MBke11UVUzQJapFQ69qTYhxka5KX4u7QirhAMz"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet joins",
+        "hash": "BuoF7vqxEFNcbT2ojY8gntjmGAzQR5aUF2xW3S6F1Vdw",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/BuoF7vqxEFNcbT2ojY8gntjmGAzQR5aUF2xW3S6F1Vdw"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet joins",
+        "hash": "CK8bujogParoqGGtatqDoo22xYsh5DpkH1gVQ97HDTau",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/CK8bujogParoqGGtatqDoo22xYsh5DpkH1gVQ97HDTau"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet posts the 10 USDC bond for an early slot",
+        "hash": "BrZ3Vin2gdVQAa27ndAHw6TRZhjXFrrKxQWfg3hQFr7U",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/BrZ3Vin2gdVQAa27ndAHw6TRZhjXFrrKxQWfg3hQFr7U"
+      }
+    ]
+  },
+  {
+    "run": "demo circle-v2.rota-nearhack.testnet circle 5 (resumed)",
+    "at": "2026-11-10T10:04:51.210Z",
+    "transactions": [
+      {
+        "label": "top up amara.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "BQ6yefW8TEEWbt1bADpE8BPojVFmLRLBWinLZbypV5bM",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "amara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/BQ6yefW8TEEWbt1bADpE8BPojVFmLRLBWinLZbypV5bM"
+      },
+      {
+        "label": "top up bao.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "3dYZJsvBvopGyd65uxThnGT5cqFQhs8oW5wbknDtrRr4",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "bao.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/3dYZJsvBvopGyd65uxThnGT5cqFQhs8oW5wbknDtrRr4"
+      },
+      {
+        "label": "top up carmen.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "BEzzR9kgzGiA3F1pqavZcg7ng7o8y2H2RkSFeMxKNHj4",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "carmen.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/BEzzR9kgzGiA3F1pqavZcg7ng7o8y2H2RkSFeMxKNHj4"
+      },
+      {
+        "label": "top up dara.rota-nearhack.testnet to its starting NEAR balance",
+        "hash": "CfGrMg45YJ2NvsdVw6ssQy5sp8VpMUwkAYZawfzQ5po2",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "dara.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/CfGrMg45YJ2NvsdVw6ssQy5sp8VpMUwkAYZawfzQ5po2"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet starts the circle",
+        "hash": "6aoiUdAnYbHogXGiMGc8HYsbWjHYoTFtW72fpoJmRR1i",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "circle-v2.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/6aoiUdAnYbHogXGiMGc8HYsbWjHYoTFtW72fpoJmRR1i"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet pays 10 USDC",
+        "hash": "EvVY8Ps3yiGM8CeFyn5bmvYjp2xT6R8Eg1vEAyfxomhs",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/EvVY8Ps3yiGM8CeFyn5bmvYjp2xT6R8Eg1vEAyfxomhs"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet pays 10 USDC",
+        "hash": "H34i14fwJqfMha3VGXdPC3uHToTemGTyfDASazbgSraS",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/H34i14fwJqfMha3VGXdPC3uHToTemGTyfDASazbgSraS"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet pays 10 USDC",
+        "hash": "GKNNGMceHHo29etNJcjLKCvkJ8TiavDxR2yHsGoAQQAm",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/GKNNGMceHHo29etNJcjLKCvkJ8TiavDxR2yHsGoAQQAm"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet pays 10 USDC",
+        "hash": "F7VYqrRLW3ygkPASzrsde3XaUEv5K8NuiE3dG4yotBEb",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/F7VYqrRLW3ygkPASzrsde3XaUEv5K8NuiE3dG4yotBEb"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet pays 10 USDC",
+        "hash": "6qCwWZfWjLHuXafCVrDLXmLHCUtVfrjDwxkEPs7iE99N",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/6qCwWZfWjLHuXafCVrDLXmLHCUtVfrjDwxkEPs7iE99N"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet pays 10 USDC",
+        "hash": "2BREHF6ZR4BcMb14zQwiFZGSWW7nH5ayqiDbHYhYJLJF",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/2BREHF6ZR4BcMb14zQwiFZGSWW7nH5ayqiDbHYhYJLJF"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet pays 10 USDC",
+        "hash": "6HkFWNf3EiHJ91LXJQzxrt4oLtj1AX2E215Yc2tUgVSV",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/6HkFWNf3EiHJ91LXJQzxrt4oLtj1AX2E215Yc2tUgVSV"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet pays 10 USDC",
+        "hash": "AZHCARpTH64AVUinE67QqR9KqX6pYkBK5dNWc5gQb2nE",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/AZHCARpTH64AVUinE67QqR9KqX6pYkBK5dNWc5gQb2nE"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet pays 10 USDC",
+        "hash": "5PNksYv8XfYgt1m88Bs6QrPaJYLywAD2chegTeTqGfDJ",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/5PNksYv8XfYgt1m88Bs6QrPaJYLywAD2chegTeTqGfDJ"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet pays 10 USDC",
+        "hash": "8MF5E9TdbHnzRYCYQnwmKB5Wn1GBwAz6WJwcvHFfWCaQ",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/8MF5E9TdbHnzRYCYQnwmKB5Wn1GBwAz6WJwcvHFfWCaQ"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet pays 10 USDC",
+        "hash": "BcSbX4aZCHtj1aEzwWZzJw4bBcYGHzjZFj2BMEEEaNGj",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/BcSbX4aZCHtj1aEzwWZzJw4bBcYGHzjZFj2BMEEEaNGj"
+      },
+      {
+        "label": "amara.rota-nearhack.testnet pays 10 USDC",
+        "hash": "4gCCneknZ8u1SbUARW76TevJ4xRmzANLixpwsk5CYMC2",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/4gCCneknZ8u1SbUARW76TevJ4xRmzANLixpwsk5CYMC2"
+      },
+      {
+        "label": "bao.rota-nearhack.testnet pays 10 USDC",
+        "hash": "xGqWQLGR7tKRa1h3s2H12NHNmGZA53AFNSeTSDWp7gT",
+        "signer": "bao.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/xGqWQLGR7tKRa1h3s2H12NHNmGZA53AFNSeTSDWp7gT"
+      },
+      {
+        "label": "carmen.rota-nearhack.testnet pays 10 USDC",
+        "hash": "6A6gpiNsYkud96eF8cWAoExKj7EgUqLMu7k1UznxE8Ug",
+        "signer": "carmen.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/6A6gpiNsYkud96eF8cWAoExKj7EgUqLMu7k1UznxE8Ug"
+      },
+      {
+        "label": "dara.rota-nearhack.testnet pays 10 USDC",
+        "hash": "3Jkc2j5iWRDpArijZKEc7r5Mii8BkEo1dFENBHWt8sXN",
+        "signer": "dara.rota-nearhack.testnet",
+        "receiver": "usdc-mock.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/3Jkc2j5iWRDpArijZKEc7r5Mii8BkEo1dFENBHWt8sXN"
+      }
+    ]
   }
 ]

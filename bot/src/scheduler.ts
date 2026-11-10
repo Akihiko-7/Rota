@@ -9,7 +9,7 @@
 
 import type { Circle, Ledger, RoundStatus } from "./ledger.ts";
 import type { Store } from "./store.ts";
-import { esc, span, txLink, usdc, utc, who } from "./format.ts";
+import { esc, receipt, short, span, usdc, utc, whoList } from "./format.ts";
 
 export type Notify = (chatId: number, html: string) => Promise<void>;
 
@@ -70,8 +70,8 @@ export class Scheduler {
       const fresh = status.paid.filter((a) => !seen.includes(a));
       if (fresh.length) {
         seen.push(...fresh);
-        const names = fresh.map((a) => who(a, this.store)).join(", ");
-        await this.post(id, `💸 ${names} paid round ${status.round + 1} (${status.paid.length} of ${status.paid.length + status.unpaid.length}).`);
+        const total = status.paid.length + status.unpaid.length;
+        await this.post(id, `💸 ${whoList(fresh, this.store)} paid for round ${status.round + 1}.\n${status.paid.length} of ${total} members have paid.`);
       }
     }
 
@@ -101,32 +101,35 @@ export class Scheduler {
       await this.post(
         id,
         status.status === "Completed"
-          ? `🏁 <b>${esc(circle.name)}</b> is complete: ${circle.history.length} rounds, every member received the pot once. Bonds left over were returned.`
-          : `🛑 <b>${esc(circle.name)}</b> was dissolved by unanimous vote; this round's contributions and all bonds were refunded.`,
+          ? `🏁 <b>${esc(circle.name)}</b> is complete!\n\nAll ${circle.history.length} rounds are done, and every member received the pot once. Any deposits left over were returned.`
+          : `🛑 <b>${esc(circle.name)}</b> was closed by a vote of all members.\n\nEveryone got back this round's payments and their deposits.`,
       );
     }
   }
 
   private async remind(id: string, circle: Circle, s: RoundStatus): Promise<void> {
     const sent = (this.store.watch(id).reminded[s.round] ??= []);
-    const unpaid = s.unpaid.map((a) => who(a, this.store)).join(", ");
+    const unpaid = whoList(s.unpaid, this.store);
     const lead = Math.min(REMIND_BEFORE_MS, (circle.round_duration_sec * 1000) / 2);
     if (s.now_ms > s.deadline_ms) {
       if (sent.includes("overdue")) return;
       sent.push("overdue");
       await this.post(
         id,
-        `⚠️ Round ${s.round + 1} is past its deadline. Still unpaid: ${unpaid}.\n` +
-          `Grace period ends at ${utc(s.grace_ends_ms)} (in ${span(s.grace_ends_ms - s.now_ms)}). Then I settle with what was collected; ` +
-          `each missed payment is recorded and up to one contribution of that member's bond goes into the pot.`,
+        `⚠️ Round ${s.round + 1} is past its deadline.\n\n` +
+          `Still to pay: ${unpaid}\n\n` +
+          `There's a short grace period until ${utc(s.grace_ends_ms)} (${span(s.grace_ends_ms - s.now_ms)} from now). ` +
+          `After that I'll pay out what was collected. A missed payment goes on that member's record, ` +
+          `and up to ${usdc(circle.contribution)} is taken from their deposit and added to the pot.`,
       );
     } else if (s.deadline_ms - s.now_ms <= lead) {
       if (sent.includes("due")) return;
       sent.push("due");
       await this.post(
         id,
-        `⏰ Round ${s.round + 1} is due at ${utc(s.deadline_ms)} (in ${span(s.deadline_ms - s.now_ms)}). ` +
-          `Still unpaid: ${unpaid}. Pay ${usdc(circle.contribution)} with /pay.`,
+        `⏰ Reminder: round ${s.round + 1} is due in ${span(s.deadline_ms - s.now_ms)} (${utc(s.deadline_ms)}).\n\n` +
+          `Still to pay: ${unpaid}\n\n` +
+          `Each member pays ${usdc(circle.contribution)}. Type /pay to see how.`,
       );
     }
   }
@@ -134,15 +137,28 @@ export class Scheduler {
   settledText(circle: Circle, round: number): string {
     const rec = circle.history[round];
     const tx = this.store.state.settleTx[`${circle.id}:${round}`];
-    let text = `✅ Round ${round + 1} of ${circle.order.length} settled: <b>${usdc(rec.amount)}</b> paid to ${who(rec.recipient, this.store)}.`;
+    const lines = [`✅ Round ${round + 1} of ${circle.order.length} is paid out!`, "", `${whoList([rec.recipient], this.store)} received <b>${usdc(rec.amount)}</b>.`];
     if (rec.missed.length) {
-      const missed = rec.missed
-        .map((a) => `${who(a, this.store)}${circle.order.indexOf(a) < round ? " (default: already received the pot)" : ""}`)
-        .join(", ");
-      text += `\nMissed by ${missed}. ${usdc(rec.slashed)} of bond was slashed into the pot.`;
+      const names = whoList(rec.missed, this.store);
+      const one = rec.missed.length === 1;
+      const slashed = BigInt(rec.slashed);
+      lines.push(
+        "",
+        `❗ ${names} didn't pay this round.` +
+          (slashed > 0n
+            ? ` ${usdc(slashed)} was taken from ${one ? "their deposit" : "their deposits"} and added to the pot.`
+            : ` There was no deposit to take from, so the pot is smaller.`),
+      );
+      const defaulted = rec.missed.filter((a) => circle.order.indexOf(a) < round);
+      if (defaulted.length) {
+        lines.push(`${whoList(defaulted, this.store)} already had ${defaulted.length === 1 ? "their turn" : "their turns"}, so this counts as a default on ${defaulted.length === 1 ? "their record" : "their records"}.`);
+      } else {
+        lines.push(`It's noted on ${one ? "their record" : "their records"} as a missed payment.`);
+      }
     }
-    text += `\nSettled by ${esc(rec.settled_by)}${tx ? ` · tx ${txLink(tx.hash, tx.url)}` : ""}`;
-    if (rec.payout === "Claimable") text += `\nThe transfer failed, so the amount is claimable by ${esc(rec.recipient)} only.`;
-    return text;
+    if (rec.payout === "Claimable") lines.push("", `The transfer didn't go through, so the money is waiting for ${esc(short(rec.recipient))} to claim it.`);
+    lines.push("", rec.settled_by === this.ledger.treasurerId ? "Paid out by me, the treasurer." : `Paid out by ${esc(short(rec.settled_by))}.`);
+    if (tx) lines.push(receipt(tx.hash, tx.url));
+    return lines.join("\n");
   }
 }

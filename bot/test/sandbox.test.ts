@@ -93,9 +93,9 @@ test("/redteam on chain: two rejections by NEAR, injected recipient ignored", as
   const h = harness({ ledger: new NearLedger(chain, circleId, tokenId, treasurer) });
   await h.say(`/circle ${id}`);
   const out = await h.say("/redteam");
-  assert.match(out[1], /<code>Access key receiver circle-v1\.sandbox does not match transaction receiver usdc-mock\.sandbox<\/code>/);
-  assert.match(out[2], /<code>Access key does not allow method claim<\/code>/);
-  assert.match(out[3], /✔️ Executed · tx <code>\w+<\/code>\nThe contract ignored <code>recipient<\/code>: it paid 20 USDC to <b>amara\.sandbox<\/b>, slot 1/);
+  assert.match(out[1], /Blocked by NEAR before it even ran.*NEAR's exact words: <i>"Access key receiver circle-v1\.sandbox does not match transaction receiver usdc-mock\.sandbox"<\/i>/s);
+  assert.match(out[2], /Blocked by NEAR before it even ran.*NEAR's exact words: <i>"Access key does not allow method claim"<\/i>/s);
+  assert.match(out[3], /✅ <b>This one went through\.<\/b>\n🧾 Transaction <code>\w+…<\/code>\n\nThe contract ignored the thief: it paid 20 USDC to <b>amara<\/b>, whose turn it was\./);
   const thief = `thief.${treasurer.accountId}`;
   assert.equal(await chain.exists(thief), false);
   assert.equal(await chain.view(tokenId, "ft_balance_of", { account_id: thief }), "0");
@@ -107,7 +107,7 @@ test("the scheduler settles a fully paid round on chain and announces it", async
   await h.say(`/circle ${id}`);
   await payAll(id);
   const posts = await h.tick();
-  assert.match(posts.join("\n"), /✅ Round 1 of 2 settled: <b>20 USDC<\/b> paid to <b>amara\.sandbox<\/b>\.\nSettled by treasurer-v1\.sandbox · tx <code>\w+<\/code>/);
+  assert.match(posts.join("\n"), /✅ Round 1 of 2 is paid out!\n\n<b>amara<\/b> received <b>20 USDC<\/b>\.\n\nPaid out by me, the treasurer\.\n🧾 Transaction <code>\w+…<\/code>/);
   const circle = await chain.view<{ history: { settled_by: string }[] }>(circleId, "get_circle", { circle_id: id });
   assert.equal(circle.history[0].settled_by, treasurer.accountId);
 });

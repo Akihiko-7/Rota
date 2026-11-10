@@ -11,8 +11,8 @@ Rota is a rotating savings circle (susu, tanda, chama, chit fund, hui) on NEAR. 
 > | Circle contract (`contract/circle`) | Sandbox tests pass. Deployed and **locked** on testnet as `circle-v2.rota-nearhack.testnet`; full cycles run on-chain. Not on mainnet |
 > | Mock NEP-141 (`contract/mock-ft`) | **A freely mintable test token, not USDC and worth nothing.** Anyone can call `mint`. Used in tests and on testnet as `usdc-mock.rota-nearhack.testnet` |
 > | Treasurer key | Real and on testnet: an account whose only key can call `settle` on the circle |
-> | Telegram bot (`bot/`) | Commands, status reads, reminders, auto-settle with the treasurer key, `/redteam`, account linking. Tested with a mocked LLM and Telegram, and against a local sandbox |
-> | AI answers (NEAR AI Cloud) | Built and tested with a mocked endpoint. **Not working live yet:** our NEAR AI account returns HTTP 402 (no credits), and the bot says so in chat. Model attestation works |
+> | Telegram bot (`bot/`) | Commands, status reads, reminders, auto-settle with the treasurer key, `/redteam`, account linking. Tested with a mocked LLM and Telegram, and against a local sandbox. Ran a full circle live in a test group (circle 5 on circle-v2) |
+> | AI answers (NEAR AI Cloud) | Working live with `Qwen/Qwen3.8-27B` (tool calling confirmed, about $0.0003 per question). Tests use a mocked endpoint |
 > | Account-link signing page | **Not built yet** (web app). Links stay unverified until a NEP-413 signature is sent with `/verify` |
 > | Web app (`web/`) | Not started |
 >
@@ -45,9 +45,9 @@ The script checks each of these and exits non-zero if any fails. `npm run demo:t
 - settles each round with the treasurer key as soon as the contract allows it;
 - answers `/status`, `/order`, `/history`, `/pay`, `/rep`, `/settle`, `/redteam`, `/link`, `/verify` and `/swap`.
 
-On top of that, `/ask` and messages that mention the bot go to NEAR AI Cloud (`Qwen/Qwen3.8-27B` by default, a model served from a TEE with attestation; `/attest` fetches the report with a fresh nonce). The model can read circle state and call one action, `settle_round`. **There is no fallback to another LLM provider:** if NEAR AI is unreachable or refuses the request, the bot says so and the commands keep working.
+On top of that, `/ask` and replies to any of the bot's messages go to NEAR AI Cloud (`Qwen/Qwen3.8-27B` by default, a model served from a TEE with attestation; `/attest` fetches the report with a fresh nonce). The model can read circle state and call one action, `settle_round`. **There is no fallback to another LLM provider:** if NEAR AI is unreachable or refuses the request, the bot says so and the commands keep working.
 
-**AI cost controls.** Only `/ask` and mentions call the LLM. Commands, reminders, status, settlements and `/redteam` are templates. Each question sends a short system prompt and the question, with no chat history and `max_tokens` 300, and allows at most two tool rounds. Two further limits apply:
+**AI cost controls.** Only `/ask` and replies to the bot call the LLM. Commands, reminders, status, settlements and `/redteam` are templates. Each question sends a short system prompt and the question, with no chat history and `max_tokens` 300, and allows at most two tool rounds. Two further limits apply:
 - A daily budget (`NEARAI_DAILY_BUDGET_USD`, default $0.50) is checked before every call against the model's published price.
 - Each user can ask 5 questions per 10 minutes.
 
@@ -72,10 +72,10 @@ So someone who takes over the server, the Telegram account or the LLM can at wor
 
 ### Privacy
 
-- **Telegram privacy mode is on**, so the bot only receives commands, messages that mention it, and replies to its own messages. Ordinary group chat never reaches it. The bot checks this at startup (`can_read_all_group_messages` must be false) and refuses to run otherwise.
+- **Telegram privacy mode is on**, so the bot only receives commands and replies to its own messages. Ordinary group chat never reaches it, and neither do plain @mentions: Telegram doesn't deliver those to privacy-mode bots (confirmed in the demo group). The bot checks this at startup (`can_read_all_group_messages` must be false) and refuses to run otherwise.
 - It stores, in one JSON file: which group follows which circle; Telegram user id, username and NEAR account for users who ran `/link`, and whether the link is verified; and which rounds and payments it has already announced. No keys, and no message text.
 - Message logging is off by default. `BOT_TRANSCRIPT_PATH` turns on a log of the messages the bot receives and sends, used to record the demo transcript.
-- `/ask` and mention texts, plus the circle's public on-chain data, are sent to NEAR AI Cloud.
+- The text of `/ask` questions and of replies to the bot, plus the circle's public on-chain data, are sent to NEAR AI Cloud.
 
 ### Run it
 
