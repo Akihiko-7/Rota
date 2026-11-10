@@ -2109,5 +2109,19 @@
         "url": "https://testnet.nearblocks.io/txns/9E5zh2T7YrrRNmK6Myta9QGvkhqdChJ4Boj9JPqEFSGJ"
       }
     ]
+  },
+  {
+    "run": "harvest v1 pot 0 stake (driver)",
+    "at": "2026-11-10T15:25:16.282Z",
+    "transactions": [
+      {
+        "label": "harvest-drive: stake pot 0",
+        "hash": "B89ahfyx72e9rntCDVbEdFqKpKGW6ouP6Fisrb8AAaxo",
+        "signer": "harvest-treasurer-v1.rota-nearhack.testnet",
+        "receiver": "harvest-v1.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/B89ahfyx72e9rntCDVbEdFqKpKGW6ouP6Fisrb8AAaxo"
+      }
+    ]
   }
 ]

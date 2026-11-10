@@ -93,3 +93,27 @@ test("tutorials and payment records, at phone, tablet and desktop widths", async
     await context.close();
   }
 });
+
+test("Harvest: the live pot on testnet with real numbers; testnet only on mainnet", async ({ browser }) => {
+  const page = await pageAs(browser);
+  await page.goto("/testnet/harvest/0");
+  await expect(page.getByRole("heading", { name: "Group stake (first real run)" })).toBeVisible();
+  await expect(page.locator(".chip")).toContainText(/Staked|Unbonding|Ripe|Shared out|Being/);
+  await expect(page.locator(".facts")).toContainText("Deposited: 17 NEAR");
+  await expect(page.getByText(/Read from the pool just now|The pool returned/)).toBeVisible();
+  await expect(page.getByText(/Pool's current APY: \d+\.\d\d%/)).toBeVisible();
+  await expect(page.getByText(/calculated from NEAR's on-chain reward parameters/)).toBeVisible();
+  await expect(page.locator(".people li")).toHaveCount(4);
+  expect(await noSideScroll(page)).toBe(true);
+  await page.screenshot({ path: "test-results/harvest-pot.png", fullPage: true });
+
+  await page.goto("/testnet/harvest");
+  await expect(page.getByRole("heading", { name: "Stake together, share the harvest" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Group stake \(first real run\)/ })).toBeVisible();
+
+  const context = await browser.newContext({ baseURL: "http://localhost:5199" });
+  await context.addInitScript(() => localStorage.setItem("rota-mainnet-warning-seen", "1"));
+  const main = await context.newPage();
+  await main.goto("/mainnet/harvest");
+  await expect(main.getByRole("heading", { name: "Harvest is testnet only for now" })).toBeVisible();
+});
