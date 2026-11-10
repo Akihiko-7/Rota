@@ -1759,5 +1759,103 @@
         "url": "https://testnet.nearblocks.io/txns/3Jkc2j5iWRDpArijZKEc7r5Mii8BkEo1dFENBHWt8sXN"
       }
     ]
+  },
+  {
+    "run": "faucet top-up of rota-nearhack.testnet",
+    "at": "2026-11-10T12:10:07.456Z",
+    "transactions": [
+      {
+        "label": "delete rota-topup-517d5d7f.testnet, sending its balance to rota-nearhack.testnet",
+        "hash": "GcbTPV8kspu8UimmXw8CHRsVCJ6bFsyn4HRQSgq5uXX7",
+        "signer": "rota-topup-517d5d7f.testnet",
+        "receiver": "rota-topup-517d5d7f.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/GcbTPV8kspu8UimmXw8CHRsVCJ6bFsyn4HRQSgq5uXX7"
+      }
+    ]
+  },
+  {
+    "run": "faucet top-up of rota-nearhack.testnet",
+    "at": "2026-11-10T12:10:20.383Z",
+    "transactions": [
+      {
+        "label": "delete rota-topup-b5af7dc0.testnet, sending its balance to rota-nearhack.testnet",
+        "hash": "B9BDYSrV1zVgi9f8rkV3CCek3NDGnTBkKKEdgWu4fLar",
+        "signer": "rota-topup-b5af7dc0.testnet",
+        "receiver": "rota-topup-b5af7dc0.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/B9BDYSrV1zVgi9f8rkV3CCek3NDGnTBkKKEdgWu4fLar"
+      }
+    ]
+  },
+  {
+    "run": "harvest deploy v0",
+    "at": "2026-11-10T12:11:34.566Z",
+    "transactions": [
+      {
+        "label": "create harvest-v0.rota-nearhack.testnet and deploy the Harvest contract",
+        "hash": "DHeMi944JNPoYpp32VcjBwqatPMdPDgLpySLyz6cN2Dc",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "harvest-v0.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/DHeMi944JNPoYpp32VcjBwqatPMdPDgLpySLyz6cN2Dc"
+      }
+    ]
+  },
+  {
+    "run": "harvest treasurer v0",
+    "at": "2026-11-10T12:11:46.794Z",
+    "transactions": [
+      {
+        "label": "create harvest-treasurer-v0.rota-nearhack.testnet holding only a key for stake/unstake/withdraw/distribute on harvest-v0.rota-nearhack.testnet",
+        "hash": "3SUEBapMfTahZfKAwePu7kSdB8czn59W882hcKzQvzTe",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "harvest-treasurer-v0.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/3SUEBapMfTahZfKAwePu7kSdB8czn59W882hcKzQvzTe"
+      }
+    ]
+  },
+  {
+    "run": "harvest create v0 aurora.pool.f863973.m0 1 1 Live check",
+    "at": "2026-11-10T12:11:51.153Z",
+    "transactions": [
+      {
+        "label": "create pot \"Live check\" on harvest-v0.rota-nearhack.testnet: pool aurora.pool.f863973.m0, filling 1 min, term 1 epoch(s)",
+        "hash": "Cs8YuGfS3hzrMy8bx9c31w1Ftuacw7VwN6gL2ZmnYPiM",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "harvest-v0.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/Cs8YuGfS3hzrMy8bx9c31w1Ftuacw7VwN6gL2ZmnYPiM"
+      }
+    ]
+  },
+  {
+    "run": "harvest deposit v0 0 amara.rota-nearhack.testnet 0.2",
+    "at": "2026-11-10T12:11:56.176Z",
+    "transactions": [
+      {
+        "label": "amara.rota-nearhack.testnet deposits 0.2 NEAR into pot 0",
+        "hash": "9WTvozKvC25UPDTyEA3kTdqpgFg6HRCQPhNvZeNBT5Fp",
+        "signer": "amara.rota-nearhack.testnet",
+        "receiver": "harvest-v0.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/9WTvozKvC25UPDTyEA3kTdqpgFg6HRCQPhNvZeNBT5Fp"
+      }
+    ]
+  },
+  {
+    "run": "harvest step v0 0 stake",
+    "at": "2026-11-10T12:13:04.101Z",
+    "transactions": [
+      {
+        "label": "treasurer key: stake pot 0",
+        "hash": "J21zdR1Wi5aAn412JVZhBgGcqYZ15zX6TRoWfYd9sjuc",
+        "signer": "harvest-treasurer-v0.rota-nearhack.testnet",
+        "receiver": "harvest-v0.rota-nearhack.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/J21zdR1Wi5aAn412JVZhBgGcqYZ15zX6TRoWfYd9sjuc"
+      }
+    ]
   }
 ]

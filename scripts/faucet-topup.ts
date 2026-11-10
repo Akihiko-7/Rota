@@ -10,6 +10,7 @@ import { KeyPair } from "near-api-js";
 import { Chain } from "./lib/near.ts";
 import { loadEnv, requireEnv } from "./lib/env.ts";
 import { appendRun } from "./lib/record.ts";
+import { saveKey } from "./lib/keys.ts";
 
 const FAUCET = "https://helper.nearprotocol.com/account";
 
@@ -31,6 +32,8 @@ const res = await fetch(FAUCET, {
 if (!res.ok) throw new Error(`faucet: HTTP ${res.status} ${await res.text()}`);
 for (let i = 0; i < 20 && !(await chain.exists(temp)); i++) await new Promise((r) => setTimeout(r, 1_500));
 console.log(`faucet created ${temp} with ${near(await balance(temp))} NEAR`);
+// Keep the key until the account is deleted, so a dropped connection doesn't strand the NEAR.
+saveKey(temp, keyPair.toString());
 
 try {
   await chain.send(`delete ${temp}, sending its balance to ${beneficiary}`, chain.account(temp, keyPair.toString()), temp, [

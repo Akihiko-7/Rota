@@ -1,0 +1,700 @@
+{
+  "schema_version": "0.4.0",
+  "metadata": {
+    "name": "rota-harvest",
+    "version": "1.0.0",
+    "build": {
+      "compiler": "rustc 1.95.0",
+      "builder": "cargo-near cargo-near-build 0.11.5"
+    },
+    "wasm_hash": "Hsh9GrMHcpkiNLXupvZDCQupR4UJrjdbqJaTqYY6Xf2q"
+  },
+  "body": {
+    "functions": [
+      {
+        "name": "cancel_deposit",
+        "doc": " Takes the caller's whole deposit back. Only before staking starts (or if staking failed).",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "claim",
+        "doc": " Re-sends a payout whose transfer failed, to the depositor only.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "contract_source_metadata",
+        "kind": "view"
+      },
+      {
+        "name": "create_pot",
+        "doc": " Creates a pot. Attach at least 0.05 NEAR (kept for storage).\n `fill_sec`: how long deposits stay open. `term_epochs`: how many epochs\n the pot stays staked before it can be unstaked.",
+        "kind": "call",
+        "modifiers": [
+          "payable"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "name",
+              "type_schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "pool_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+                "type": "string"
+              }
+            },
+            {
+              "name": "fill_sec",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            },
+            {
+              "name": "term_epochs",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "deposit",
+        "doc": " Deposits the attached NEAR (at least 0.1) into a filling pot.",
+        "kind": "call",
+        "modifiers": [
+          "payable"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "distribute",
+        "doc": " Pays every depositor their share of what the pool returned, pro-rata by deposit.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "get_pot",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/Pot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "get_pot_count",
+        "kind": "view",
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "get_status",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/PotStatus"
+          }
+        }
+      },
+      {
+        "name": "list_pots_for",
+        "kind": "view",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "account_id",
+              "type_schema": {
+                "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "on_paid",
+        "kind": "call",
+        "modifiers": [
+          "private"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "index",
+              "type_schema": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0.0
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "on_staked",
+        "kind": "call",
+        "modifiers": [
+          "private"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "on_unstaked",
+        "kind": "call",
+        "modifiers": [
+          "private"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "on_withdraw_check",
+        "kind": "call",
+        "modifiers": [
+          "private"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/PromiseOrValueNull"
+          }
+        }
+      },
+      {
+        "name": "on_withdrawn",
+        "kind": "call",
+        "modifiers": [
+          "private"
+        ],
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "amount",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "stake",
+        "doc": " After the filling window: stakes the whole pot with its pool.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/PromiseOrValueNull"
+          }
+        }
+      },
+      {
+        "name": "unstake",
+        "doc": " After the term: unstakes everything from the pool.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/Promise"
+          }
+        }
+      },
+      {
+        "name": "version",
+        "kind": "view",
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "withdraw",
+        "doc": " After the pool's unstaking delay: withdraws exactly the pool's unstaked balance.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "json",
+          "args": [
+            {
+              "name": "pot_id",
+              "type_schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/Promise"
+          }
+        }
+      }
+    ],
+    "root_schema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "String",
+      "type": "string",
+      "definitions": {
+        "Deposit": {
+          "type": "object",
+          "required": [
+            "account_id",
+            "amount"
+          ],
+          "properties": {
+            "account_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+              "type": "string"
+            },
+            "amount": {
+              "type": "string"
+            }
+          }
+        },
+        "Payout": {
+          "type": "object",
+          "required": [
+            "account_id",
+            "amount",
+            "status"
+          ],
+          "properties": {
+            "account_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+              "type": "string"
+            },
+            "amount": {
+              "type": "string"
+            },
+            "status": {
+              "$ref": "#/definitions/PayoutStatus"
+            }
+          }
+        },
+        "PayoutStatus": {
+          "type": "string",
+          "enum": [
+            "Pending",
+            "Paid",
+            "Claimable"
+          ]
+        },
+        "Pot": {
+          "type": "object",
+          "required": [
+            "creator",
+            "deposits",
+            "fill_ends_ms",
+            "id",
+            "name",
+            "payouts",
+            "pool_id",
+            "returned",
+            "stage",
+            "term_epochs",
+            "total"
+          ],
+          "properties": {
+            "creator": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+              "type": "string"
+            },
+            "deposits": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Deposit"
+              }
+            },
+            "distributed_at_ms": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "fill_ends_ms": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "payouts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Payout"
+              }
+            },
+            "pool_id": {
+              "description": "NEAR Account Identifier.\n\nThis is a unique, syntactically valid, human-readable account identifier on the NEAR network.\n\n[See the crate-level docs for information about validation.](index.html#account-id-rules)\n\nAlso see [Error kind precedence](AccountId#error-kind-precedence).\n\n## Examples\n\n``` use near_account_id::AccountId;\n\nlet alice: AccountId = \"alice.near\".parse().unwrap();\n\nassert!(\"ƒelicia.near\".parse::<AccountId>().is_err()); // (ƒ is not f) ```",
+              "type": "string"
+            },
+            "returned": {
+              "description": "Exactly what the pool returned on withdraw.",
+              "type": "string"
+            },
+            "stage": {
+              "$ref": "#/definitions/Stage"
+            },
+            "staked_at_ms": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "staked_epoch": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "term_epochs": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "total": {
+              "type": "string"
+            },
+            "unstaked_at_ms": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "unstaked_epoch": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        },
+        "PotStatus": {
+          "type": "object",
+          "required": [
+            "can_distribute",
+            "can_stake",
+            "can_unstake",
+            "epoch_height",
+            "fill_ends_ms",
+            "id",
+            "now_ms",
+            "stage"
+          ],
+          "properties": {
+            "can_distribute": {
+              "type": "boolean"
+            },
+            "can_stake": {
+              "type": "boolean"
+            },
+            "can_unstake": {
+              "type": "boolean"
+            },
+            "epoch_height": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "fill_ends_ms": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "id": {
+              "type": "string"
+            },
+            "now_ms": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "stage": {
+              "$ref": "#/definitions/Stage"
+            },
+            "unstake_from_epoch": {
+              "description": "The first epoch in which `unstake` is allowed (once staked).",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "withdrawable_from_epoch": {
+              "description": "The epoch from which the pool should release the funds (once unstaked).",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        },
+        "Promise": true,
+        "PromiseOrValueNull": {
+          "type": "null"
+        },
+        "Stage": {
+          "oneOf": [
+            {
+              "description": "Deposits open (until `fill_ends_ms`); depositors can take their deposit back.",
+              "type": "string",
+              "enum": [
+                "Filling"
+              ]
+            },
+            {
+              "description": "`deposit_and_stake` sent to the pool.",
+              "type": "string",
+              "enum": [
+                "Staking"
+              ]
+            },
+            {
+              "description": "Staked; `unstake` is allowed from epoch `staked_epoch + term_epochs`.",
+              "type": "string",
+              "enum": [
+                "Staked"
+              ]
+            },
+            {
+              "description": "`unstake_all` sent to the pool.",
+              "type": "string",
+              "enum": [
+                "Unstaking"
+              ]
+            },
+            {
+              "description": "Unstaked; the pool releases it 4 epochs later.",
+              "type": "string",
+              "enum": [
+                "Unbonding"
+              ]
+            },
+            {
+              "description": "Reading the pool's balance and withdrawing it.",
+              "type": "string",
+              "enum": [
+                "Withdrawing"
+              ]
+            },
+            {
+              "description": "Withdrawn from the pool: ready to distribute.",
+              "type": "string",
+              "enum": [
+                "Ripe"
+              ]
+            },
+            {
+              "description": "Everyone has been paid (or has a claimable payout).",
+              "type": "string",
+              "enum": [
+                "Distributed"
+              ]
+            },
+            {
+              "description": "Staking failed or nobody deposited; depositors take their deposits back.",
+              "type": "string",
+              "enum": [
+                "Cancelled"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

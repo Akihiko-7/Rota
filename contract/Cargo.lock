@@ -3125,10 +3125,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rota-harvest"
+version = "1.0.0"
+dependencies = [
+ "near-sdk",
+]
+
+[[package]]
 name = "rota-mock-ft"
 version = "1.0.0"
 dependencies = [
  "near-contract-standards",
+ "near-sdk",
+]
+
+[[package]]
+name = "rota-mock-pool"
+version = "1.0.0"
+dependencies = [
  "near-sdk",
 ]
 
