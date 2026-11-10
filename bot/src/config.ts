@@ -24,10 +24,13 @@ export const ALLOWED = [
   "MAINNET_ROTA_TOKEN_ID",
   "MAINNET_TREASURER_ACCOUNT_ID",
   "MAINNET_TREASURER_FC_PRIVATE_KEY",
+  "HARVEST_CONTRACT_ID",
+  "HARVEST_TREASURER_ACCOUNT_ID",
+  "HARVEST_TREASURER_FC_PRIVATE_KEY",
 ];
 
 /** The only private keys the bot may hold: the treasurers' settle-only function-call keys. */
-const TREASURER_KEYS = ["TREASURER_FC_PRIVATE_KEY", "MAINNET_TREASURER_FC_PRIVATE_KEY"];
+const TREASURER_KEYS = ["TREASURER_FC_PRIVATE_KEY", "MAINNET_TREASURER_FC_PRIVATE_KEY", "HARVEST_TREASURER_FC_PRIVATE_KEY"];
 
 /**
  * Copies allowed variables from `.env` text into `env` (existing values win)

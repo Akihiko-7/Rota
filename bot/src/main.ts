@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { Chain, type Network } from "../../scripts/lib/near.ts";
 import { NearAi } from "./ai.ts";
 import { ADMIN_WARNING, createBot } from "./bot.ts";
+import { NearHarvest } from "./harvest.ts";
 import { applyEnv } from "./config.ts";
 import { NearLedger } from "./ledger.ts";
 import { Scheduler, type Ledgers } from "./scheduler.ts";
@@ -68,11 +69,20 @@ const transcript = transcriptPath
   ? (entry: object) => appendFileSync(transcriptPath, `${JSON.stringify({ t: new Date().toISOString(), ...entry })}\n`)
   : undefined;
 
+let harvest: NearHarvest | undefined;
+if (process.env.HARVEST_CONTRACT_ID && process.env.HARVEST_TREASURER_ACCOUNT_ID && process.env.HARVEST_TREASURER_FC_PRIVATE_KEY) {
+  const chain = new Chain("testnet", need("NEAR_RPC_URL"));
+  harvest = new NearHarvest(chain, process.env.HARVEST_CONTRACT_ID, chain.account(process.env.HARVEST_TREASURER_ACCOUNT_ID, process.env.HARVEST_TREASURER_FC_PRIVATE_KEY));
+  console.log(`harvest key: ${await harvest.checkKey()}`);
+}
+
 const html = { parse_mode: "HTML" as const, link_preview_options: { is_disabled: true } };
 const scheduler = new Scheduler(ledgers, store, async (chat, text) => {
   await bot.api.sendMessage(chat, text, html);
 });
-const bot = createBot(need("TELEGRAM_BOT_TOKEN"), { ledgers, store, ai, scheduler, transcript, webUrl: process.env.WEB_URL || undefined });
+const bot = createBot(need("TELEGRAM_BOT_TOKEN"), { ledgers, store, ai, scheduler, transcript, webUrl: process.env.WEB_URL || undefined, harvest });
+scheduler.harvest = harvest;
+scheduler.webUrl = process.env.WEB_URL?.replace(/\/$/, "") || undefined;
 
 await bot.init();
 if (bot.botInfo.can_read_all_group_messages) {

@@ -33,7 +33,7 @@ export function Header() {
           <Link to={to("/start")}>{net === "testnet" ? "Try it free" : "Get started"}</Link>
           <Link to={to("/new")}>Start a circle</Link>
           <Link to={to("/rep")}>Payment records</Link>
-          <a href={`${to("/")}#how`}>How it works</a>
+          <Link to={to("/harvest")}>Harvest</Link>
         </nav>
         <div className="header-right">
           <NetworkSwitch />
@@ -57,6 +57,7 @@ export function Header() {
         <Link to={to("/start")}>{net === "testnet" ? "Try it free" : "Get started"}</Link>
         <Link to={to("/new")}>Start a circle</Link>
         <Link to={to("/rep")}>Records</Link>
+        <Link to={to("/harvest")}>Harvest</Link>
       </nav>
     </div>
   );

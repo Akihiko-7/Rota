@@ -9,6 +9,7 @@
 import { Bot, type Context } from "grammy";
 import type { UserFromGetMe } from "grammy/types";
 import { AiUnavailable, type NearAi, type Tool } from "./ai.ts";
+import { potText, type Harvest } from "./harvest.ts";
 import { esc, every, list, plainReason, receipt, short, span, statusWords, usdc, utc, whoList } from "./format.ts";
 import type { Ledger, TxOutcome } from "./ledger.ts";
 import { isAccountId, linkPayload, newNonce, LINK_RECIPIENT } from "./link.ts";
@@ -23,6 +24,8 @@ export interface Deps {
   scheduler: Scheduler;
   /** The Rota web app, for the /link signing page and circle links. */
   webUrl?: string;
+  /** Testnet Harvest (group staking), if configured. */
+  harvest?: Harvest;
   /** Called with every message the bot receives or sends, for the demo transcript. */
   transcript?: (entry: { dir: "in" | "out"; chat: number; from?: string; text: string }) => void;
 }
@@ -106,7 +109,8 @@ export function createBot(token: string, deps: Deps, botInfo?: UserFromGetMe): B
         `/settle - pay out this round now, if the rules allow\n` +
         `/redteam - watch me try (and fail) to steal\n` +
         `/ask - ask me anything, or reply to any of my messages\n` +
-        `/attest - check that my AI runs on secure hardware\n\n` +
+        `/attest - check that my AI runs on secure hardware\n` +
+        `/harvest - follow a group staking pot, e.g. /harvest 0 (testnet only)\n\n` +
         `<b>Networks</b>\n` +
         `Testnet uses free test money with no value. Mainnet uses real USDC.` +
         (ledgers.mainnet ? "" : ` Mainnet is launching soon.`) +
@@ -400,6 +404,18 @@ export function createBot(token: string, deps: Deps, botInfo?: UserFromGetMe): B
       if (!(e instanceof AiUnavailable)) throw e;
       await say(ctx, `🤖 I couldn't get the proof right now.\n\nReason: ${esc(e.message)}`);
     }
+  });
+
+  bot.command("harvest", async (ctx) => {
+    const [id, netArg] = ctx.match.trim().toLowerCase().split(/\s+/);
+    if (netArg === "mainnet") return say(ctx, "Harvest (group staking) is testnet only for now.");
+    if (!/^\d+$/.test(id ?? "")) return say(ctx, "Type /harvest and the pot number, for example: /harvest 0");
+    if (!deps.harvest) return say(ctx, "Harvest isn't set up on this bot yet.");
+    if (!(await deps.harvest.pot(id))) return say(ctx, `I couldn't find Harvest pot ${esc(id)} on testnet.`);
+    const follows = (store.state.harvests[String(ctx.chat.id)] ??= []);
+    if (!follows.includes(id)) follows.push(id);
+    store.save();
+    await say(ctx, `${await potText(deps.harvest, store, id, web)}\n\nI'll post here as it's staked, unstaked and ripe, and share it out when it's ripe.`);
   });
 
   bot.command("ask", (ctx) => ask(ctx, ctx.match.trim()));

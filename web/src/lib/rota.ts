@@ -157,3 +157,50 @@ export function validate(c: NewCircle): string | undefined {
   if (c.graceSec > 30 * 86400) return "The grace period can be at most 30 days.";
   return undefined;
 }
+
+/** Harvest (group staking, testnet only): the transactions members sign. */
+export function harvestTxs(contractId: string) {
+  const tx = (label: string, a: FunctionCall): Tx => ({ receiverId: contractId, actions: [a], label });
+  return {
+    create: (name: string, poolId: string, fillSec: number, termEpochs: number) =>
+      tx(`Start the pot "${name}"`, call("create_pot", { name, pool_id: poolId, fill_sec: fillSec, term_epochs: termEpochs }, 30n, NEAR / 20n)),
+    deposit: (id: string, yocto: bigint) => tx("Deposit into the pot", call("deposit", { pot_id: id }, 30n, yocto)),
+    cancel: (id: string) => tx("Take your deposit back", call("cancel_deposit", { pot_id: id }, 30n)),
+    claim: (id: string) => tx("Claim your share", call("claim", { pot_id: id }, 30n)),
+    step: (id: string, step: "stake" | "unstake" | "withdraw" | "distribute") =>
+      tx({ stake: "Stake the pot", unstake: "Unstake the pot", withdraw: "Withdraw from the pool", distribute: "Share out the pot" }[step], call(step, { pot_id: id }, 300n)),
+  };
+}
+
+export type HarvestStage = "Filling" | "Staking" | "Staked" | "Unstaking" | "Unbonding" | "Withdrawing" | "Ripe" | "Distributed" | "Cancelled";
+
+export interface HarvestPot {
+  id: string;
+  name: string;
+  creator: string;
+  pool_id: string;
+  fill_ends_ms: number;
+  term_epochs: number;
+  stage: HarvestStage;
+  deposits: { account_id: string; amount: string }[];
+  total: string;
+  staked_at_ms: number | null;
+  staked_epoch: number | null;
+  unstaked_at_ms: number | null;
+  unstaked_epoch: number | null;
+  returned: string;
+  distributed_at_ms: number | null;
+  payouts: { account_id: string; amount: string; status: "Pending" | "Paid" | "Claimable" }[];
+}
+
+export interface HarvestStatus {
+  stage: HarvestStage;
+  now_ms: number;
+  epoch_height: number;
+  fill_ends_ms: number;
+  can_stake: boolean;
+  unstake_from_epoch: number | null;
+  can_unstake: boolean;
+  withdrawable_from_epoch: number | null;
+  can_distribute: boolean;
+}

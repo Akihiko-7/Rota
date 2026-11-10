@@ -9,6 +9,7 @@ import { createBot } from "../src/bot.ts";
 import type { Circle, Ledger, Nep413Proof, Reputation, RoundStatus, TxOutcome } from "../src/ledger.ts";
 import { Scheduler } from "../src/scheduler.ts";
 import { Store } from "../src/store.ts";
+import type { EpochTiming, Harvest, Pot, PotStatus } from "../src/harvest.ts";
 
 export const C = 10_000_000n; // 10 USDC
 const ROUND_MS = 120_000;
@@ -164,7 +165,7 @@ type AiReply = { status?: number; body: unknown };
  * fake NEAR AI endpoint; the requests it got are in `aiRequests`.
  */
 export function harness<L extends Ledger = FakeLedger>(
-  opts: { ledger?: L; mainnet?: Ledger; aiReplies?: AiReply[]; admins?: number[]; budgetUsd?: number; webUrl?: string; store?: Store } = {},
+  opts: { ledger?: L; mainnet?: Ledger; harvest?: Harvest; aiReplies?: AiReply[]; admins?: number[]; budgetUsd?: number; webUrl?: string; store?: Store } = {},
 ) {
   const ledger = (opts.ledger ?? new FakeLedger()) as L;
   const ledgers = { testnet: ledger, ...(opts.mainnet ? { mainnet: opts.mainnet } : {}) };
@@ -186,7 +187,8 @@ export function harness<L extends Ledger = FakeLedger>(
   const scheduler = new Scheduler(ledgers, store, async (chat, text) => {
     sent.push({ chat, text });
   });
-  const bot = createBot("123:TEST", { ledgers, store, ai, scheduler, webUrl: opts.webUrl }, BOT_INFO);
+  scheduler.harvest = opts.harvest;
+  const bot = createBot("123:TEST", { ledgers, store, ai, scheduler, webUrl: opts.webUrl, harvest: opts.harvest }, BOT_INFO);
   bot.api.config.use(async (_prev, method, payload) => {
     const p = payload as Record<string, unknown>;
     const ok = (result: unknown) => ({ ok: true as const, result }) as never;
@@ -245,4 +247,71 @@ export function harness<L extends Ledger = FakeLedger>(
   }
 
   return { bot, ai, ledger, store, sent, say, tick, botStatus, aiRequests };
+}
+
+const NEAR = 10n ** 24n;
+
+/** A Harvest pot on a fake contract: tests set its stage; steps advance it like the contract would. */
+export class FakeHarvest implements Harvest {
+  readonly contractId = "harvest-v1.rota.testnet";
+  readonly steps: string[] = [];
+  epoch = 100;
+  inPoolNow = 0n;
+  readonly p: Pot = {
+    id: "0",
+    name: "Group stake",
+    pool_id: "aurora.pool.f863973.m0",
+    fill_ends_ms: 1_800_000_000_000,
+    term_epochs: 1,
+    stage: "Filling",
+    deposits: [
+      { account_id: "amara.rota.testnet", amount: (3n * NEAR).toString() },
+      { account_id: "bao.rota.testnet", amount: NEAR.toString() },
+    ],
+    total: (4n * NEAR).toString(),
+    staked_epoch: null,
+    unstaked_epoch: null,
+    returned: "0",
+    payouts: [],
+  };
+  now = 1_800_000_000_000 - 600_000;
+
+  async pot(id: string) {
+    return id === "0" ? structuredClone(this.p) : null;
+  }
+  async status(): Promise<PotStatus> {
+    const p = this.p;
+    return {
+      stage: p.stage,
+      now_ms: this.now,
+      epoch_height: this.epoch,
+      fill_ends_ms: p.fill_ends_ms,
+      can_stake: p.stage === "Filling" && this.now >= p.fill_ends_ms,
+      unstake_from_epoch: p.staked_epoch === null ? null : p.staked_epoch + p.term_epochs,
+      can_unstake: p.stage === "Staked" && p.staked_epoch !== null && this.epoch >= p.staked_epoch + p.term_epochs,
+      withdrawable_from_epoch: p.unstaked_epoch === null ? null : p.unstaked_epoch + 4,
+      can_distribute: p.stage === "Ripe",
+    };
+  }
+  async inPool() {
+    return this.inPoolNow;
+  }
+  async epochs(): Promise<EpochTiming> {
+    return { height: this.epoch, startMs: this.now, msPerEpoch: 7 * 3600_000 };
+  }
+  async step(_id: string, step: "stake" | "unstake" | "withdraw" | "distribute") {
+    this.steps.push(step);
+    const p = this.p;
+    if (step === "stake") [p.stage, p.staked_epoch, this.inPoolNow] = ["Staked", this.epoch, 4n * NEAR];
+    if (step === "unstake") [p.stage, p.unstaked_epoch] = ["Unbonding", this.epoch];
+    if (step === "withdraw") [p.stage, p.returned] = ["Ripe", this.inPoolNow.toString()];
+    if (step === "distribute") {
+      p.stage = "Distributed";
+      p.payouts = [
+        { account_id: "amara.rota.testnet", amount: ((BigInt(p.returned) * 3n) / 4n).toString(), status: "Paid" },
+        { account_id: "bao.rota.testnet", amount: (BigInt(p.returned) - (BigInt(p.returned) * 3n) / 4n).toString(), status: "Paid" },
+      ];
+    }
+    return { ok: true, hash: `H${step}`, url: `https://explorer/H${step}` };
+  }
 }

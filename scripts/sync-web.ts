@@ -11,6 +11,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { loadEnv } from "./lib/env.ts";
 import { codeHash, circleWasm } from "./lib/rota.ts";
 
+const harvestWasm = readFileSync(new URL("../contract/res/rota_harvest.wasm", import.meta.url));
+
 loadEnv();
 const root = new URL("../", import.meta.url);
 const wasm = circleWasm();
@@ -45,6 +47,14 @@ const out = {
     },
     /** Circles created by automated browser tests, labelled as such on their pages. */
     testRuns: ["6", "7", "8", "9", "10"],
+    /** Group staking (Harvest), testnet only. */
+    harvest: {
+      contractId: process.env.HARVEST_CONTRACT_ID || "harvest-v1.rota-nearhack.testnet",
+      treasurerId: process.env.HARVEST_TREASURER_ACCOUNT_ID || "harvest-treasurer-v1.rota-nearhack.testnet",
+      defaultPool: "aurora.pool.f863973.m0",
+      wasm: { path: "contract/res/rota_harvest.wasm", codeHash: codeHash(harvestWasm) },
+      unlockEpochs: 4,
+    } as { contractId: string; treasurerId: string; defaultPool: string; wasm: { path: string; codeHash: string }; unlockEpochs: number } | null,
   },
   mainnet: {
     ...shared,
@@ -60,6 +70,7 @@ const out = {
     accountSuffix: ".near",
     demo: null,
     testRuns: [] as string[],
+    harvest: null,
   },
 };
 

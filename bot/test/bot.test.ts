@@ -9,7 +9,7 @@ import { linkMessage, linkPayload, LINK_RECIPIENT } from "../src/link.ts";
 import * as webLink from "../../web/src/lib/link.ts";
 import { Store } from "../src/store.ts";
 import { writeFileSync } from "node:fs";
-import { ALICE, BOB, BOT_INFO, FakeLedger, GROUP, harness } from "./harness.ts";
+import { ALICE, BOB, BOT_INFO, FakeHarvest, FakeLedger, GROUP, harness } from "./harness.ts";
 import { ADMIN_WARNING } from "../src/bot.ts";
 
 const AMARA = "amara.rota.testnet";
@@ -355,4 +355,53 @@ test("state saved before two networks is read as testnet", () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("Harvest: /harvest shows a pot and follows it; mainnet is testnet-only for now", async () => {
+  const harvest = new FakeHarvest();
+  const h = harness({ harvest, webUrl: "https://rota.example" });
+  assert.match((await h.say("/harvest 0 mainnet"))[0], /testnet only for now/);
+  assert.match((await h.say("/harvest 9"))[0], /couldn't find Harvest pot 9 on testnet/);
+  const [shown] = await h.say("/harvest 0");
+  assert.match(shown, /🌾 <b>Group stake<\/b> \(Harvest pot 0 · testnet\)/);
+  assert.match(shown, /Deposits \(2\): <b>amara<\/b> 3 NEAR, <b>bao<\/b> 1 NEAR/);
+  assert.match(shown, /Estimated ripe: .* UTC \(from current epoch timing; NEAR's epochs vary\)\./);
+  assert.match(shown, /href="https:\/\/rota\.example\/testnet\/harvest\/0"/);
+  assert.deepEqual(h.store.state.harvests[String(GROUP)], ["0"]);
+});
+
+const NEAR = 10n ** 24n;
+
+test("Harvest: the scheduler runs each step when allowed, reports real rewards, and says ripe once", async () => {
+  const harvest = new FakeHarvest();
+  const h = harness({ harvest });
+  await h.say("/harvest 0");
+  assert.deepEqual(await h.tick(), [], "nothing to do while filling");
+
+  harvest.now = harvest.p.fill_ends_ms;
+  const staked = await h.tick();
+  assert.deepEqual(harvest.steps, ["stake"]);
+  assert.match(staked[0], /🌱 Harvest pot 0 · testnet is staked\./);
+  assert.match(staked[0], /rewards so far: 0 NEAR \(read from the pool just now\)/);
+  assert.deepEqual(await h.tick(), [], "staked is announced once; the term isn't over");
+
+  harvest.epoch += 1;
+  harvest.inPoolNow = 4n * NEAR + 1_234_567_000_000_000_000_000n;
+  const unstaked = await h.tick();
+  assert.deepEqual(harvest.steps, ["stake", "unstake"]);
+  assert.match(unstaked[0], /⏳ Harvest pot 0 · testnet is unstaked/);
+  assert.match(unstaked[0], /rewards so far: 0\.00123 NEAR/);
+
+  harvest.epoch += 3;
+  assert.deepEqual(await h.tick(), [], "still unbonding");
+  assert.deepEqual(harvest.steps, ["stake", "unstake"]);
+
+  harvest.epoch += 1;
+  await h.tick(); // withdraw
+  const ripe = await h.tick(); // ripe reminder, then distribute
+  assert.deepEqual(harvest.steps, ["stake", "unstake", "withdraw", "distribute"]);
+  assert.match(ripe[0], /🌾 <b>Group stake<\/b> is ripe! The pool returned 4\.00123 NEAR, including 0\.00123 NEAR of rewards\./);
+  assert.match(ripe[1], /✅ Harvest pot 0 · testnet is shared out/);
+  assert.match(ripe[1], /<b>amara<\/b> received 3\.00092 NEAR/);
+  assert.deepEqual(await h.tick(), [], "each stage is posted once");
 });

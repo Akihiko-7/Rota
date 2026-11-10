@@ -9,6 +9,7 @@
 
 import type { Circle, Ledger, RoundStatus } from "./ledger.ts";
 import type { Net, Store } from "./store.ts";
+import { harvestTick, type Harvest } from "./harvest.ts";
 import { esc, receipt, short, span, usdc, utc, whoList } from "./format.ts";
 
 export type Notify = (chatId: number, html: string) => Promise<void>;
@@ -26,6 +27,9 @@ export class Scheduler {
   private readonly notify: Notify;
   private timer?: NodeJS.Timeout;
   private running = false;
+  /** Testnet Harvest pots, if the bot has a Harvest key. */
+  harvest?: Harvest;
+  webUrl?: string;
 
   constructor(ledgers: Ledgers, store: Store, notify: Notify) {
     this.ledgers = ledgers;
@@ -58,6 +62,7 @@ export class Scheduler {
           console.error(`scheduler: ${net} circle ${id}: ${e instanceof Error ? e.message : e}`);
         }
       }
+      if (this.harvest) await harvestTick(this.harvest, this.store, this.notify, this.webUrl);
     } finally {
       this.store.save();
       this.running = false;

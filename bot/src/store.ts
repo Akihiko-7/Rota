@@ -46,9 +46,15 @@ export interface State {
   settleTx: Record<string, { hash: string; url?: string }>;
   /** NEAR AI spend for one UTC day, for the daily budget cap. */
   aiSpend: { day: string; usd: number };
+  /** Telegram chat id → Harvest pot ids it follows (testnet). */
+  harvests: Record<string, string[]>;
+  /** Harvest pot id → stage announcements already posted. */
+  harvestSeen: Record<string, string[]>;
+  /** `${potId}:${step}` → the step transaction the bot sent. */
+  harvestTx: Record<string, { hash: string; url?: string }>;
 }
 
-const empty = (): State => ({ groups: {}, users: {}, watches: {}, settleTx: {}, aiSpend: { day: "", usd: 0 } });
+const empty = (): State => ({ groups: {}, users: {}, watches: {}, settleTx: {}, aiSpend: { day: "", usd: 0 }, harvests: {}, harvestSeen: {}, harvestTx: {} });
 
 export class Store {
   readonly state: State;

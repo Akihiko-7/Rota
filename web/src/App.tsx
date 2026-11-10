@@ -5,6 +5,7 @@ import { NetProvider, lastNetwork, rememberNetwork, useNet } from "./lib/net";
 import { Link, navigate, useLocation } from "./lib/router";
 import { WalletProvider } from "./near/wallet";
 import { CirclePage } from "./pages/CirclePage";
+import { HarvestPage } from "./pages/HarvestPage";
 import { Home } from "./pages/Home";
 import { LinkPage } from "./pages/LinkPage";
 import { NewCircle } from "./pages/NewCircle";
@@ -48,6 +49,7 @@ function Page({ rest, query }: { rest: string; query: URLSearchParams }) {
   const { to } = useNet();
   const circle = /^\/c\/(\d+)\/?$/.exec(rest);
   const rep = /^\/rep\/([^/]+)\/?$/.exec(rest);
+  const pot = /^\/harvest\/(\d+)\/?$/.exec(rest);
   if (rest === "/" || rest === "") return <Home />;
   if (circle) return <CirclePage id={circle[1]} />;
   if (rest === "/new") return <NewCircle />;
@@ -55,6 +57,8 @@ function Page({ rest, query }: { rest: string; query: URLSearchParams }) {
   if (rest === "/start") return <StartPage />;
   if (rest === "/rep") return <RepPage />;
   if (rep) return <RepPage account={decodeURIComponent(rep[1])} />;
+  if (rest === "/harvest") return <HarvestPage />;
+  if (pot) return <HarvestPage id={pot[1]} />;
   return (
     <section className="card narrow">
       <h2>Page not found</h2>

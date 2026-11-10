@@ -51,7 +51,17 @@
       "8",
       "9",
       "10"
-    ]
+    ],
+    "harvest": {
+      "contractId": "harvest-v1.rota-nearhack.testnet",
+      "treasurerId": "harvest-treasurer-v1.rota-nearhack.testnet",
+      "defaultPool": "aurora.pool.f863973.m0",
+      "wasm": {
+        "path": "contract/res/rota_harvest.wasm",
+        "codeHash": "Hsh9GrMHcpkiNLXupvZDCQupR4UJrjdbqJaTqYY6Xf2q"
+      },
+      "unlockEpochs": 4
+    }
   },
   "mainnet": {
     "botUsername": "RotaNear_Bot",
@@ -75,6 +85,7 @@
     "treasurerId": null,
     "accountSuffix": ".near",
     "demo": null,
-    "testRuns": []
+    "testRuns": [],
+    "harvest": null
   }
 }
