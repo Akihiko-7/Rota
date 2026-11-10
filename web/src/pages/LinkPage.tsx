@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Card, Copy } from "../components/ui";
-import { config } from "../config";
+import { BOT } from "../config";
+import { useNet } from "../lib/net";
 import { base64ToBytes, LINK_RECIPIENT, linkMessage, signatureBase64 } from "../lib/link";
 import { useWallet } from "../near/wallet";
 
 /** Signs the bot's /link message (NEP-413) with the member's wallet and shows the /verify command. */
 export function LinkPage({ query }: { query: URLSearchParams }) {
   const wallet = useWallet();
+  const { net, cfg } = useNet();
   const tg = Number(query.get("tg"));
   const account = query.get("account") ?? "";
   const nonce = query.get("nonce") ?? "";
@@ -23,6 +25,7 @@ export function LinkPage({ query }: { query: URLSearchParams }) {
   }
 
   const message = linkMessage(tg, account);
+  const wrongNetwork = !account.endsWith(cfg.accountSuffix);
   const wrongAccount = wallet.accountId && wallet.accountId !== account;
   const sign = async () => {
     setResult({ busy: true });
@@ -41,6 +44,11 @@ export function LinkPage({ query }: { query: URLSearchParams }) {
         your account.
       </p>
       <blockquote className="message">{message}</blockquote>
+      {wrongNetwork && (
+        <p className="err">
+          {account} isn't a {net} account (those end in {cfg.accountSuffix}). Switch network at the top, or ask the bot for a new link.
+        </p>
+      )}
       {!wallet.accountId && (
         <button className="btn" disabled={!wallet.ready} onClick={() => void wallet.connect()}>
           Connect {account}
@@ -59,11 +67,11 @@ export function LinkPage({ query }: { query: URLSearchParams }) {
       {result.error && <p className="err">❌ {result.error}</p>}
       {result.command && (
         <div className="done">
-          <p className="ok">✅ Signed. Now send this to the bot in your Telegram group:</p>
+          <p className="ok">✓ Signed. Now send this to the bot in your Telegram group:</p>
           <pre className="command">{result.command}</pre>
           <div className="actions">
             <Copy text={result.command} label="Copy the command" />
-            <a className="btn secondary small" href={`https://t.me/${config.botUsername}`} target="_blank" rel="noreferrer">
+            <a className="btn secondary small" href={`https://t.me/${BOT}`} target="_blank" rel="noreferrer">
               Open Telegram
             </a>
           </div>

@@ -163,9 +163,12 @@ type AiReply = { status?: number; body: unknown };
  * A bot wired to the fake ledger. `aiReplies` are returned in order by the
  * fake NEAR AI endpoint; the requests it got are in `aiRequests`.
  */
-export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiReplies?: AiReply[]; admins?: number[]; budgetUsd?: number; webUrl?: string } = {}) {
+export function harness<L extends Ledger = FakeLedger>(
+  opts: { ledger?: L; mainnet?: Ledger; aiReplies?: AiReply[]; admins?: number[]; budgetUsd?: number; webUrl?: string; store?: Store } = {},
+) {
   const ledger = (opts.ledger ?? new FakeLedger()) as L;
-  const store = new Store();
+  const ledgers = { testnet: ledger, ...(opts.mainnet ? { mainnet: opts.mainnet } : {}) };
+  const store = opts.store ?? new Store();
   const sent: { chat: number; text: string }[] = [];
   const aiRequests: { url: string; body: Record<string, unknown> }[] = [];
   const aiReplies = [...(opts.aiReplies ?? [])];
@@ -180,10 +183,10 @@ export function harness<L extends Ledger = FakeLedger>(opts: { ledger?: L; aiRep
 
   // Qwen3.8-27B's published price, so no model-list request is made.
   const ai = new NearAi({ apiKey: "test-key", model: "test/model", fetch: fakeFetch, price: { in: 4e-8, out: 1.35e-6 }, dailyBudgetUsd: opts.budgetUsd });
-  const scheduler = new Scheduler(ledger, store, async (chat, text) => {
+  const scheduler = new Scheduler(ledgers, store, async (chat, text) => {
     sent.push({ chat, text });
   });
-  const bot = createBot("123:TEST", { ledger, store, ai, scheduler, webUrl: opts.webUrl }, BOT_INFO);
+  const bot = createBot("123:TEST", { ledgers, store, ai, scheduler, webUrl: opts.webUrl }, BOT_INFO);
   bot.api.config.use(async (_prev, method, payload) => {
     const p = payload as Record<string, unknown>;
     const ok = (result: unknown) => ({ ok: true as const, result }) as never;

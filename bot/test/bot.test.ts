@@ -8,6 +8,7 @@ import { applyEnv } from "../src/config.ts";
 import { linkMessage, linkPayload, LINK_RECIPIENT } from "../src/link.ts";
 import * as webLink from "../../web/src/lib/link.ts";
 import { Store } from "../src/store.ts";
+import { writeFileSync } from "node:fs";
 import { ALICE, BOB, BOT_INFO, FakeLedger, GROUP, harness } from "./harness.ts";
 import { ADMIN_WARNING } from "../src/bot.ts";
 
@@ -17,7 +18,7 @@ const CARMEN = "carmen.rota.testnet";
 
 async function following(h: ReturnType<typeof harness>) {
   const out = await h.say("/circle 1");
-  assert.match(out.at(-1)!, /This group now follows <b>Test circle<\/b> \(circle 1\)/);
+  assert.match(out.at(-1)!, /This group now follows <b>Test circle<\/b> \(circle 1 · testnet\)/);
 }
 
 test("help states the key's limits", async () => {
@@ -25,15 +26,15 @@ test("help states the key's limits", async () => {
   const [help] = await h.say("/help");
   assert.match(help, /I can do only one thing with money: pay out a round's pot, and only when the rules allow it/);
   assert.match(help, /Even if someone hacked me, they couldn't send the money anywhere else/);
-  assert.match(help, /free test token with no value/);
+  assert.match(help, /Testnet uses free test money with no value\. Mainnet uses real USDC\. Mainnet is launching soon\./);
 });
 
 test("only a group admin can choose the circle", async () => {
   const h = harness();
   assert.match((await h.say("/circle 1", BOB))[0], /Only a group admin/);
-  assert.match((await h.say("/circle 7"))[0], /I couldn't find circle 7/);
+  assert.match((await h.say("/circle 7"))[0], /I couldn't find circle 7 on testnet/);
   await following(h);
-  assert.equal(h.store.circleOf(GROUP), "1");
+  assert.deepEqual(h.store.circleOf(GROUP), { net: "testnet", id: "1" });
 });
 
 test("status lists who paid and who hasn't", async () => {
@@ -51,7 +52,7 @@ test("scheduler announces payments, settles when everyone paid, and announces on
   const h = harness();
   await following(h);
   h.ledger.pay(AMARA);
-  assert.deepEqual(await h.tick(), ["💸 <b>amara</b> paid for round 1.\n1 of 3 members have paid."]);
+  assert.deepEqual(await h.tick(), ["💸 <b>amara</b> paid for round 1 · testnet.\n1 of 3 members have paid."]);
   assert.deepEqual(await h.tick(), [], "nothing new, nothing posted");
 
   h.ledger.pay(BAO);
@@ -59,10 +60,10 @@ test("scheduler announces payments, settles when everyone paid, and announces on
   const posts = await h.tick();
   assert.equal(h.ledger.settleCalls.length, 1);
   assert.deepEqual(h.ledger.settleCalls[0], { circle_id: "1" }, "the scheduler never passes extra arguments");
-  assert.equal(posts[0], "💸 <b>bao</b> and <b>carmen</b> paid for round 1.\n3 of 3 members have paid.");
+  assert.equal(posts[0], "💸 <b>bao</b> and <b>carmen</b> paid for round 1 · testnet.\n3 of 3 members have paid.");
   assert.equal(
     posts[1],
-    '✅ Round 1 of 3 is paid out!\n\n<b>amara</b> received <b>30 USDC</b>.\n\nPaid out by me, the treasurer.\n🧾 <a href="https://explorer/TX1">View on NEAR explorer</a>',
+    '✅ Round 1 of 3 is paid out! · testnet\n\n<b>amara</b> received <b>30 USDC</b>.\n\nPaid out by me, the treasurer.\n🧾 <a href="https://explorer/TX1">View on NEAR explorer</a>',
   );
   assert.deepEqual(await h.tick(), [], "a settled round is announced once");
 });
@@ -77,12 +78,12 @@ test("scheduler reminds once before the deadline and once after, then settles af
   h.ledger.now += 70_000; // 50 s before the deadline
   const due = await h.tick();
   assert.equal(due.length, 1);
-  assert.match(due[0], /⏰ Reminder: round 1 is due in 50 s .*\n\nStill to pay: <b>carmen<\/b>\n\nEach member pays 10 USDC\. Type \/pay to see how\./);
+  assert.match(due[0], /⏰ Reminder · testnet: round 1 is due in 50 s .*\n\nStill to pay: <b>carmen<\/b>\n\nEach member pays 10 USDC\. Type \/pay to see how\./);
   assert.deepEqual(await h.tick(), []);
 
   h.ledger.now += 60_000; // past the deadline, inside grace
   const overdue = await h.tick();
-  assert.match(overdue[0], /⚠️ Round 1 is past its deadline\.\n\nStill to pay: <b>carmen<\/b>\n\nThere's a short grace period until/);
+  assert.match(overdue[0], /⚠️ Round 1 is past its deadline · testnet\.\n\nStill to pay: <b>carmen<\/b>\n\nThere's a short grace period until/);
   assert.equal(h.ledger.settleCalls.length, 0, "no settle during grace");
   assert.deepEqual(await h.tick(), []);
 
@@ -210,12 +211,12 @@ test("state survives a restart", () => {
   try {
     const path = join(dir, "state.json");
     const a = new Store(path);
-    a.state.groups["-1"] = { circleId: "4", linkedBy: 1, linkedAt: 0 };
-    a.watch("4").announced = 2;
+    a.state.groups["-1"] = { circleId: "4", network: "testnet", linkedBy: 1, linkedAt: 0 };
+    a.watch("testnet", "4").announced = 2;
     a.save();
     const b = new Store(path);
-    assert.equal(b.circleOf(-1), "4");
-    assert.equal(b.watch("4").announced, 2);
+    assert.deepEqual(b.circleOf(-1), { net: "testnet", id: "4" });
+    assert.equal(b.watch("testnet", "4").announced, 2);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -235,7 +236,7 @@ test("a completed circle is announced once", async () => {
   assert.equal(posts.filter((p) => p.startsWith("✅ Round")).length, 2);
   assert.deepEqual(
     posts.filter((p) => p.startsWith("🏁")),
-    ["🏁 <b>Test circle</b> is complete!\n\nAll 2 rounds are done, and every member received the pot once. Any deposits left over were returned."],
+    ["🏁 <b>Test circle</b> · testnet is complete!\n\nAll 2 rounds are done, and every member received the pot once. Any deposits left over were returned."],
   );
   assert.deepEqual(await h.tick(), []);
 });
@@ -305,9 +306,53 @@ test("/link points to the web signing page, whose message matches the bot's exac
   const nonce = h.store.user(BOB.id)!.nonce;
   const href = /<a href="([^"]+)">Open the signing page<\/a>/.exec(linked)![1].replace(/&amp;/g, "&");
   const url = new URL(href);
-  assert.equal(url.origin + url.pathname, "https://rota.example/link");
+  assert.equal(url.origin + url.pathname, "https://rota.example/testnet/link");
   assert.deepEqual(Object.fromEntries(url.searchParams), { tg: String(BOB.id), account: BAO, nonce });
   assert.equal(webLink.linkMessage(BOB.id, BAO), linkMessage(BOB.id, BAO));
   assert.equal(webLink.LINK_RECIPIENT, LINK_RECIPIENT);
   assert.deepEqual([...webLink.base64ToBytes(nonce)], [...Buffer.from(nonce, "base64")]);
+});
+
+test("mainnet: the bot says it isn't live until a mainnet contract is configured", async () => {
+  const h = harness();
+  assert.match((await h.say("/circle 2 mainnet"))[0], /Rota isn't live on mainnet yet/);
+  assert.match((await h.say("/circle 2 moon"))[0], /for example: \/circle 5 testnet or \/circle 2 mainnet/);
+  assert.match((await h.say("/link amara.near", BOB))[0], /Rota isn't live on mainnet yet/);
+  assert.equal(h.store.circleOf(GROUP), undefined);
+});
+
+test("mainnet: a group follows a mainnet circle and every message says mainnet", async () => {
+  const mainnet = new FakeLedger(["amara.near", "bao.near"]);
+  Object.assign(mainnet, { network: "mainnet", contractId: "rota-circle-v1.near", tokenId: "usdc.near", treasurerId: "rota-treasurer-v1.near" });
+  const h = harness({ mainnet, webUrl: "https://rota.example" });
+  const [followed] = await h.say("/circle 1 mainnet");
+  assert.match(followed, /\(circle 1 · mainnet\)/);
+  assert.match(followed, /\(real USDC\)/);
+  assert.match(followed, /href="https:\/\/rota\.example\/mainnet\/c\/1"/);
+  assert.match((await h.say("/status"))[0], /<b>Test circle<\/b> · mainnet, round 1 of 2/);
+
+  mainnet.pay("amara.near");
+  mainnet.pay("bao.near");
+  const posts = await h.tick();
+  assert.match(posts.join("\n"), /paid for round 1 · mainnet/);
+  assert.match(posts.join("\n"), /✅ Round 1 of 2 is paid out! · mainnet/);
+  assert.equal(mainnet.settleCalls.length, 1);
+  assert.equal(h.ledger.settleCalls.length, 0, "the testnet ledger isn't touched");
+
+  const [link] = await h.say("/link bao.near", BOB);
+  assert.match(link, /href="https:\/\/rota\.example\/mainnet\/link\?tg=2&amp;account=bao\.near/);
+});
+
+test("state saved before two networks is read as testnet", () => {
+  const dir = mkdtempSync(join(tmpdir(), "rota-bot-"));
+  try {
+    const path = join(dir, "state.json");
+    writeFileSync(path, JSON.stringify({ groups: { "-7": { circleId: "5", linkedBy: 1, linkedAt: 0 } }, users: {}, watches: { "5": { announced: 4, paid: {}, reminded: {} } }, settleTx: { "5:0": { hash: "H" } } }));
+    const st = new Store(path);
+    assert.deepEqual(st.circleOf(-7), { net: "testnet", id: "5" });
+    assert.equal(st.watch("testnet", "5").announced, 4);
+    assert.deepEqual(st.settleTx("testnet", "5", 0), { hash: "H" });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

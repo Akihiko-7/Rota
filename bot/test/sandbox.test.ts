@@ -107,7 +107,7 @@ test("the scheduler settles a fully paid round on chain and announces it", async
   await h.say(`/circle ${id}`);
   await payAll(id);
   const posts = await h.tick();
-  assert.match(posts.join("\n"), /✅ Round 1 of 2 is paid out!\n\n<b>amara<\/b> received <b>20 USDC<\/b>\.\n\nPaid out by me, the treasurer\.\n🧾 Transaction <code>\w+…<\/code>/);
+  assert.match(posts.join("\n"), /✅ Round 1 of 2 is paid out! · testnet\n\n<b>amara<\/b> received <b>20 USDC<\/b>\.\n\nPaid out by me, the treasurer\.\n🧾 Transaction <code>\w+…<\/code>/);
   const circle = await chain.view<{ history: { settled_by: string }[] }>(circleId, "get_circle", { circle_id: id });
   assert.equal(circle.history[0].settled_by, treasurer.accountId);
 });

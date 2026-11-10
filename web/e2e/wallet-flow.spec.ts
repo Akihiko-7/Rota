@@ -5,22 +5,22 @@ import { AMARA, BAO, connect, noSideScroll, pageAs, sign } from "./helpers";
 
 test("a full circle on testnet: create, join, start, swap, pay, pay out, finish", async ({ browser }) => {
   const amara = await pageAs(browser, AMARA);
-  await amara.goto("/new");
+  await amara.goto("/testnet/new");
   await connect(amara);
   await amara.getByLabel("Name").fill(`E2E ${new Date().toISOString().slice(11, 19)}`);
   await amara.getByLabel("Other members' NEAR accounts").fill(BAO);
-  await amara.getByLabel("Amount each member pays per round (USDC)").fill("1");
+  await amara.getByLabel(/Amount each member pays per round/).fill("1");
   await expect(amara.locator(".summary")).toHaveText("2 members each pay 1 USDC every 2 minutes. There are 2 rounds, and each member receives 2 USDC once.");
   // On success the app opens the new circle's page.
   await amara.getByRole("button", { name: "Create the circle" }).click();
-  await amara.waitForURL(/\/c\/\d+$/, { timeout: 90_000 });
+  await amara.waitForURL(/\/testnet\/c\/\d+$/, { timeout: 90_000 });
   const id = /\/c\/(\d+)$/.exec(amara.url())![1];
   test.info().annotations.push({ type: "circle", description: id });
   await expect(amara.locator(".chip")).toHaveText("Waiting to start");
   await sign(amara, "Join the circle");
 
   const bao = await pageAs(browser, BAO);
-  await bao.goto(`/c/${id}`);
+  await bao.goto(`/testnet/c/${id}`);
   await connect(bao);
   await sign(bao, "Join the circle");
   await sign(bao, "Start the circle");
@@ -34,7 +34,14 @@ test("a full circle on testnet: create, join, start, swap, pay, pay out, finish"
   await expect(bao.getByText("amara (turn 1) wants to swap with you (turn 2).")).toBeVisible();
   await sign(bao, "Accept the swap");
   await expect(bao.locator(".order li").first()).toContainText("bao", { timeout: 30_000 });
-  await expect(bao.locator(".round .big")).toHaveText("🎁 The pot goes to bao");
+  await expect(bao.locator(".round .big")).toHaveText("The pot goes to bao");
+
+  // Free test USDC from the test wallet card.
+  const card = bao.locator(".testwallet");
+  await expect(card.locator("dd").nth(1)).not.toHaveText("…");
+  const before = Number(await card.locator("dd").nth(1).innerText());
+  await sign(bao, "Get test USDC");
+  await expect(card.locator("dd").nth(1)).toHaveText(String(before + 100), { timeout: 30_000 });
 
   // Cross-chain pay is shown, disabled and labelled, on testnet.
   await expect(bao.getByRole("button", { name: "Pay from another chain" })).toBeDisabled();
@@ -65,7 +72,7 @@ test("a full circle on testnet: create, join, start, swap, pay, pay out, finish"
 test("the /link page signs the bot's message with the member's wallet (NEP-413)", async ({ browser }) => {
   const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64");
   const amara = await pageAs(browser, AMARA);
-  await amara.goto(`/link?${new URLSearchParams({ tg: "424242", account: AMARA, nonce })}`);
+  await amara.goto(`/testnet/link?${new URLSearchParams({ tg: "424242", account: AMARA, nonce })}`);
   await expect(amara.locator(".message")).toHaveText(`Link Telegram user 424242 to NEAR account ${AMARA} in Rota`);
   await amara.getByRole("button", { name: `Connect ${AMARA}` }).click();
   await amara.getByRole("button", { name: "Sign the message" }).click();
@@ -74,17 +81,20 @@ test("the /link page signs the bot's message with the member's wallet (NEP-413)"
   expect(command.startsWith("/verify ed25519:")).toBe(true);
 
   // The same check the bot runs: a valid signature by a full-access key of the account, on chain.
-  await verifyMessage({
-    signerAccountId: AMARA,
-    signerPublicKey: publicKey,
-    signature: Buffer.from(signature, "base64"),
-    payload: { message: `Link Telegram user 424242 to NEAR account ${AMARA} in Rota`, recipient: "rota-bot", nonce: Buffer.from(nonce, "base64") },
-    provider: new JsonRpcProvider({ url: "https://rpc.testnet.fastnear.com" }),
-  });
+  // Retried: the public RPC occasionally drops a connection.
+  await expect(async () => {
+    await verifyMessage({
+      signerAccountId: AMARA,
+      signerPublicKey: publicKey,
+      signature: Buffer.from(signature, "base64"),
+      payload: { message: `Link Telegram user 424242 to NEAR account ${AMARA} in Rota`, recipient: "rota-bot", nonce: Buffer.from(nonce, "base64") },
+      provider: new JsonRpcProvider({ url: "https://rpc.testnet.fastnear.com" }),
+    });
+  }).toPass({ timeout: 60_000 });
 
   // A wallet connected as someone else is told so instead of signing.
   const wrong = await pageAs(browser, AMARA);
-  await wrong.goto(`/link?${new URLSearchParams({ tg: "424242", account: BAO, nonce })}`);
+  await wrong.goto(`/testnet/link?${new URLSearchParams({ tg: "424242", account: BAO, nonce })}`);
   await wrong.getByRole("button", { name: `Connect ${BAO}` }).click();
   await expect(wrong.getByText(`Your wallet is connected as ${AMARA}, but the link is for ${BAO}.`)).toBeVisible();
   await expect(wrong.getByRole("button", { name: "Sign the message" })).toHaveCount(0);

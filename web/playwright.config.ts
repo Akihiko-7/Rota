@@ -5,6 +5,8 @@ import { defineConfig, devices } from "@playwright/test";
 // members' keys from ../credentials/testnet.json; nothing here is deployed.
 export default defineConfig({
   testDir: "e2e",
+  // Tutorial screenshots create a circle on testnet; run them on purpose with SHOTS=1.
+  testIgnore: process.env.SHOTS === "1" ? [] : ["**/tutorial-shots.spec.ts"],
   timeout: 8 * 60_000,
   expect: { timeout: 60_000 },
   workers: 1,

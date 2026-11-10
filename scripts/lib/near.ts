@@ -5,7 +5,8 @@
 import { Account, FailoverRpcProvider, JsonRpcProvider, actions, getTransactionLastResult, nearToYocto } from "near-api-js";
 import type { KeyPairString } from "near-api-js";
 
-export type Network = "testnet" | "sandbox";
+export type Network = "testnet" | "mainnet" | "sandbox";
+const EXPLORER: Partial<Record<Network, string>> = { testnet: "https://testnet.nearblocks.io", mainnet: "https://nearblocks.io" };
 type Action = Parameters<Account["signAndSendTransaction"]>[0]["actions"][number];
 type TxResult = Awaited<ReturnType<Account["signAndSendTransaction"]>>;
 
@@ -68,11 +69,13 @@ export class Chain {
   }
 
   txUrl(hash: string): string | undefined {
-    return this.network === "testnet" ? `https://testnet.nearblocks.io/txns/${hash}` : undefined;
+    const base = EXPLORER[this.network];
+    return base && `${base}/txns/${hash}`;
   }
 
   accountUrl(id: string): string | undefined {
-    return this.network === "testnet" ? `https://testnet.nearblocks.io/address/${id}` : undefined;
+    const base = EXPLORER[this.network];
+    return base && `${base}/address/${id}`;
   }
 
   account(id: string, privateKey: string): Account {

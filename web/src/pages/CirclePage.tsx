@@ -1,11 +1,16 @@
 import { useState } from "react";
-import { Card, ErrorNote, ExplorerLink, Loading, TxButton } from "../components/ui";
-import { config, isTestnet } from "../config";
+import { Card, ErrorNote, ExplorerLink, LaunchingSoon, Loading, TestWallet, TxButton } from "../components/ui";
+import { isLive } from "../config";
 import { every, list, short, span, usdc, when } from "../lib/format";
-import { tx, type Circle, type RoundStatus } from "../lib/rota";
+import { useNet } from "../lib/net";
+import { Link } from "../lib/router";
+import { txs, type Circle, type RoundStatus } from "../lib/rota";
 import { useData, useNow } from "../lib/useData";
-import { getCircle, getRoundStatus, tokenBalance, tokenRegistered } from "../near/chain";
+import { useChain } from "../near/chain";
 import { useWallet } from "../near/wallet";
+
+/** This network's transaction builders. */
+const useTx = () => txs(useNet().cfg);
 
 const STATUS: Record<Circle["status"], string> = {
   Forming: "Waiting to start",
@@ -15,25 +20,35 @@ const STATUS: Record<Circle["status"], string> = {
 };
 
 export function CirclePage({ id }: { id: string }) {
+  const { cfg } = useNet();
+  if (!isLive(cfg)) return <LaunchingSoon />;
+  return <LiveCircle id={id} />;
+}
+
+function LiveCircle({ id }: { id: string }) {
+  const { net, cfg } = useNet();
+  const chain = useChain();
   const { data, error, reload } = useData(
     async () => {
-      const c = await getCircle(id);
-      const s = c?.status === "Active" ? await getRoundStatus(id) : undefined;
+      const c = await chain.getCircle(id);
+      const s = c?.status === "Active" ? await chain.getRoundStatus(id) : undefined;
       return { c, s, fetchedAt: Date.now() };
     },
-    [id],
+    [id, net],
     5000,
   );
   if (error && !data) return <ErrorNote error={error} />;
   if (!data) return <Loading what={`circle ${id}`} />;
   const { c, s } = data;
-  if (!c) return <Card title="Circle not found">There's no circle {id} on {config.contractId}.</Card>;
+  if (!c) return <Card title="Circle not found">There's no circle {id} on {cfg.contractId}.</Card>;
   const offset = s ? s.now_ms - data.fetchedAt : 0;
 
   return (
     <>
       <Card className="circle-head">
-        <p className="eyebrow">Circle {c.id}</p>
+        <p className="eyebrow">
+          Circle {c.id} · {net}
+        </p>
         <h1>{c.name}</h1>
         <span className={`chip ${c.status.toLowerCase()}`}>{STATUS[c.status]}</span>
         <ul className="facts">
@@ -50,13 +65,23 @@ export function CirclePage({ id }: { id: string }) {
             Pot each round: <b>{usdc(BigInt(c.contribution) * BigInt(c.members.length))}</b>
           </li>
         </ul>
+        {((cfg.testRuns as string[]).includes(c.id) || c.name.startsWith("E2E ")) && (
+          <p className="note small testrun">This circle was created by an automated browser test of the web app. It's kept as a test record.</p>
+        )}
       </Card>
-      {c.status === "Forming" && <Forming c={c} reload={reload} />}
-      {c.status === "Active" && s && <ThisRound c={c} s={s} offset={offset} reload={reload} />}
-      {c.status === "Active" && <Swaps c={c} reload={reload} />}
-      <Order c={c} />
-      <History c={c} />
-      <More c={c} reload={reload} />
+      <div className="dash">
+        <div className="dash-main">
+          {c.status === "Forming" && <Forming c={c} reload={reload} />}
+          {c.status === "Active" && s && <ThisRound c={c} s={s} offset={offset} reload={reload} />}
+          {c.status === "Active" && <Swaps c={c} reload={reload} />}
+          <History c={c} />
+        </div>
+        <aside className="dash-side">
+          <Order c={c} />
+          <More c={c} reload={reload} />
+          <TestWallet onChange={reload} />
+        </aside>
+      </div>
     </>
   );
 }
@@ -65,6 +90,7 @@ const member = (c: Circle, accountId?: string) => c.members.find((m) => m.accoun
 
 function Forming({ c, reload }: { c: Circle; reload: () => void }) {
   const { accountId } = useWallet();
+  const tx = useTx();
   const me = member(c, accountId);
   const bond = BigInt(c.early_slot_bond);
   const joined = c.members.filter((m) => m.joined).length;
@@ -79,7 +105,7 @@ function Forming({ c, reload }: { c: Circle; reload: () => void }) {
       <ul className="people">
         {c.members.map((m) => (
           <li key={m.account_id}>
-            {m.joined ? "✅" : "⏳"} {short(m.account_id)}
+            {m.joined ? "✓" : "…"} {short(m.account_id)}{m.joined ? "" : " (not joined yet)"}
             {bond > 0n && BigInt(m.bond) >= bond && <span className="tag">deposit posted</span>}
           </li>
         ))}
@@ -116,6 +142,7 @@ function Forming({ c, reload }: { c: Circle; reload: () => void }) {
 function ThisRound({ c, s, offset, reload }: { c: Circle; s: RoundStatus; offset: number; reload: () => void }) {
   const now = useNow() + offset;
   const { accountId } = useWallet();
+  const tx = useTx();
   const me = member(c, accountId);
   const total = s.paid.length + s.unpaid.length;
   const due =
@@ -127,9 +154,9 @@ function ThisRound({ c, s, offset, reload }: { c: Circle; s: RoundStatus; offset
   return (
     <Card title={`Round ${s.round + 1} of ${s.rounds_total}`} className="round">
       <p className="big">
-        🎁 The pot goes to <b>{short(s.recipient ?? "")}</b>
+        The pot goes to <b>{short(s.recipient ?? "")}</b>
       </p>
-      <p>⏰ {due}</p>
+      <p>{due}</p>
       <div className="progress" aria-label={`${s.paid.length} of ${total} paid`}>
         <span style={{ width: `${(100 * s.paid.length) / total}%` }} />
       </div>
@@ -141,9 +168,11 @@ function ThisRound({ c, s, offset, reload }: { c: Circle; s: RoundStatus; offset
           <b>Still to pay:</b> {list(s.unpaid.map(short))}
         </p>
       )}
-      <p>💰 Collected so far: {usdc(s.collected)}</p>
+      <p>
+        Collected so far: <span className="num">{usdc(s.collected)}</span>
+      </p>
       {me && !s.paid.includes(me.account_id) && <PayBox c={c} reload={reload} />}
-      {me && s.paid.includes(me.account_id) && <p className="ok">✅ You've paid this round.</p>}
+      {me && s.paid.includes(me.account_id) && <p className="ok">✓ You've paid this round.</p>}
       {s.can_settle ? (
         <div className="actions">
           <p className="small">The pot can be paid out now. The AI treasurer normally does this, but anyone can.</p>
@@ -160,9 +189,12 @@ function ThisRound({ c, s, offset, reload }: { c: Circle; s: RoundStatus; offset
 
 function PayBox({ c, reload }: { c: Circle; reload: () => void }) {
   const { accountId } = useWallet();
+  const { net, cfg } = useNet();
+  const chain = useChain();
+  const tx = useTx();
   const { data, reload: reloadBalance } = useData(
-    async () => ({ balance: BigInt(await tokenBalance(accountId!)), registered: await tokenRegistered(accountId!) }),
-    [accountId],
+    async () => ({ balance: BigInt(await chain.tokenBalance(accountId!)), registered: await chain.tokenRegistered(accountId!) }),
+    [accountId, net],
   );
   const need = BigInt(c.contribution);
   const short_ = data && data.balance < need;
@@ -170,7 +202,7 @@ function PayBox({ c, reload }: { c: Circle; reload: () => void }) {
     <div className="pay">
       <h3>Pay your {usdc(need)}</h3>
       {data && <p className="small">Your balance: {usdc(data.balance)}</p>}
-      {short_ && isTestnet && (
+      {short_ && net === "testnet" && (
         <div className="actions">
           <p className="small">You need more test USDC. It's free on testnet.</p>
           <TxButton tx={tx.faucet(accountId!, !data.registered)} onDone={() => void reloadBalance()} secondary>
@@ -186,8 +218,10 @@ function PayBox({ c, reload }: { c: Circle; reload: () => void }) {
           Pay from another chain
         </button>
         <p id="xchain" className="small muted">
-          <span className="tag">Mainnet only</span> Paying with USDC from another chain uses NEAR Intents, which only works on mainnet. It isn't
-          available on this test network.
+          <span className="tag">Mainnet only</span>{" "}
+          {net === "testnet"
+            ? "Paying with USDC from another chain uses NEAR Intents, which only works on mainnet. It isn't available on this test network."
+            : `Paying with USDC from another chain through NEAR Intents isn't built yet. For now, get ${cfg.tokenNote} on NEAR first (see Get started).`}
         </p>
       </div>
     </div>
@@ -196,6 +230,7 @@ function PayBox({ c, reload }: { c: Circle; reload: () => void }) {
 
 function Swaps({ c, reload }: { c: Circle; reload: () => void }) {
   const { accountId } = useWallet();
+  const tx = useTx();
   const [other, setOther] = useState("");
   const myTurn = accountId ? c.order.indexOf(accountId) : -1;
   const open = c.order.filter((a, i) => i >= c.current_round && a !== accountId);
@@ -246,6 +281,7 @@ function Swaps({ c, reload }: { c: Circle; reload: () => void }) {
 }
 
 function Order({ c }: { c: Circle }) {
+  const { to } = useNet();
   if (!c.order.length) return null;
   return (
     <Card title="Payout order">
@@ -255,9 +291,11 @@ function Order({ c }: { c: Circle }) {
           const m = member(c, a);
           return (
             <li key={a} className={i === c.current_round && c.status === "Active" ? "current" : ""}>
-              <span>{short(a)}</span>
+              <span>
+                <Link to={to(`/rep/${a}`)}>{short(a)}</Link>
+              </span>
               <span className="small">
-                {rec ? `received ${usdc(rec.amount)} ✅` : i === c.current_round && c.status === "Active" ? "this round ⏳" : ""}
+                {rec ? `received ${usdc(rec.amount)}` : i === c.current_round && c.status === "Active" ? "this round" : ""}
                 {m && m.missed > 0 ? ` · missed ${m.missed}` : ""}
               </span>
             </li>
@@ -269,8 +307,9 @@ function Order({ c }: { c: Circle }) {
 }
 
 function History({ c }: { c: Circle }) {
+  const { cfg } = useNet();
   if (!c.history.length) return null;
-  const known = c.id === config.demo.circleId ? config.demo.payouts : [];
+  const known = cfg.demo && c.id === cfg.demo.circleId ? cfg.demo.payouts : [];
   return (
     <Card title="Paid out">
       <ul className="rounds">
@@ -284,11 +323,11 @@ function History({ c }: { c: Circle }) {
               </p>
               {r.missed.length > 0 && (
                 <p className="note">
-                  ❗ {list(r.missed.map(short))} didn't pay. {BigInt(r.slashed) > 0n ? `${usdc(r.slashed)} was taken from their deposit and added to the pot.` : "There was no deposit to cover it."}
+                  {list(r.missed.map(short))} didn't pay. {BigInt(r.slashed) > 0n ? `${usdc(r.slashed)} was taken from their deposit and added to the pot.` : "There was no deposit to cover it."}
                 </p>
               )}
               <p className="small muted">
-                {when(r.settled_at_ms)} · paid out by {r.settled_by === config.treasurerId ? "the AI treasurer" : short(r.settled_by)}
+                {when(r.settled_at_ms)} · paid out by {r.settled_by === cfg.treasurerId ? "the AI treasurer" : short(r.settled_by)}
                 {hash && (
                   <>
                     {" "}
@@ -306,6 +345,7 @@ function History({ c }: { c: Circle }) {
 
 function More({ c, reload }: { c: Circle; reload: () => void }) {
   const { accountId } = useWallet();
+  const tx = useTx();
   const me = member(c, accountId);
   if (!me) return null;
   const claimable = BigInt(me.claimable);

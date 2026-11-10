@@ -19,11 +19,19 @@ export const ALLOWED = [
   "BOT_TRANSCRIPT_PATH",
   "SETTLE_INTERVAL_SEC",
   "WEB_URL",
+  "MAINNET_NEAR_RPC_URL",
+  "MAINNET_ROTA_CONTRACT_ID",
+  "MAINNET_ROTA_TOKEN_ID",
+  "MAINNET_TREASURER_ACCOUNT_ID",
+  "MAINNET_TREASURER_FC_PRIVATE_KEY",
 ];
+
+/** The only private keys the bot may hold: the treasurers' settle-only function-call keys. */
+const TREASURER_KEYS = ["TREASURER_FC_PRIVATE_KEY", "MAINNET_TREASURER_FC_PRIVATE_KEY"];
 
 /**
  * Copies allowed variables from `.env` text into `env` (existing values win)
- * and deletes any other *PRIVATE_KEY variable from `env`. Returns the names
+ * and deletes every other *PRIVATE_KEY variable from `env`. Returns the names
  * it deleted.
  */
 export function applyEnv(envText: string | undefined, env: NodeJS.ProcessEnv): string[] {
@@ -31,7 +39,7 @@ export function applyEnv(envText: string | undefined, env: NodeJS.ProcessEnv): s
     const parsed = parseEnv(envText);
     for (const k of ALLOWED) if (parsed[k] && !env[k]) env[k] = parsed[k];
   }
-  const dropped = Object.keys(env).filter((k) => /PRIVATE_KEY/.test(k) && k !== "TREASURER_FC_PRIVATE_KEY");
+  const dropped = Object.keys(env).filter((k) => /PRIVATE_KEY/.test(k) && !TREASURER_KEYS.includes(k));
   for (const k of dropped) delete env[k];
   return dropped;
 }

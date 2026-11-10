@@ -7,7 +7,7 @@
 
 import { NearConnector } from "@hot-labs/near-connect";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { config } from "../config";
+import type { NetConfig } from "../config";
 import type { Tx } from "../lib/rota";
 
 export interface Sent {
@@ -68,11 +68,13 @@ export function readOutcome(outcome: unknown): Sent {
   return { hash, result };
 }
 
-function connectorBackend(): Backend {
+function connectorBackend(cfg: NetConfig): Backend {
+  const network = cfg.network as "testnet" | "mainnet";
   const connector = new NearConnector({
-    network: config.network as "testnet",
-    providers: { testnet: config.rpc },
-    features: { testnet: true, signAndSendTransaction: true },
+    network,
+    providers: { [network]: cfg.rpc },
+    // On testnet, NEAR Connect also hides wallets that don't support testnet.
+    features: { signAndSendTransaction: true },
     footerBranding: null,
   });
   return {
@@ -109,7 +111,7 @@ function connectorBackend(): Backend {
   };
 }
 
-async function devBackend(): Promise<Backend> {
+async function devBackend(cfg: NetConfig): Promise<Backend> {
   const { Account, JsonRpcProvider, KeyPair, KeyPairSigner, actions } = await import("near-api-js");
   const dev = (window as unknown as { __ROTA_DEV_SIGNER__?: { accountId: string; privateKey: string } }).__ROTA_DEV_SIGNER__;
   // Stays connected across reloads within the tab, like a real wallet.
@@ -133,7 +135,7 @@ async function devBackend(): Promise<Backend> {
       return accountId;
     },
     async send(tx) {
-      const account = new Account(dev!.accountId, new JsonRpcProvider({ url: config.rpc[0] }), dev!.privateKey as `ed25519:${string}`);
+      const account = new Account(dev!.accountId, new JsonRpcProvider({ url: cfg.rpc[0] }), dev!.privateKey as `ed25519:${string}`);
       const res = await account.signAndSendTransaction({
         receiverId: tx.receiverId,
         actions: tx.actions.map((a) => actions.functionCall(a.params.methodName, a.params.args as Record<string, unknown>, BigInt(a.params.gas), BigInt(a.params.deposit))),
@@ -154,13 +156,14 @@ async function devBackend(): Promise<Backend> {
 
 const WalletContext = createContext<Wallet | null>(null);
 
-export function WalletProvider({ children }: { children: ReactNode }) {
+/** Remount (key by network) to switch the wallet's network. */
+export function WalletProvider({ cfg, children }: { cfg: NetConfig; children: ReactNode }) {
   const [backend, setBackend] = useState<Backend>();
   const [accountId, setAccountId] = useState<string>();
 
   useEffect(() => {
     let cancelled = false;
-    const make = import.meta.env.VITE_DEV_SIGNER === "1" ? devBackend() : Promise.resolve(connectorBackend());
+    const make = import.meta.env.VITE_DEV_SIGNER === "1" && cfg.network === "testnet" ? devBackend(cfg) : Promise.resolve(connectorBackend(cfg));
     make.then(async (b) => {
       if (cancelled) return;
       b.onChange(setAccountId);
@@ -170,7 +173,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [cfg]);
 
   const connect = useCallback(async () => {
     if (!backend) return;

@@ -15,7 +15,7 @@ import { NearAi } from "./ai.ts";
 import { ADMIN_WARNING, createBot } from "./bot.ts";
 import { applyEnv } from "./config.ts";
 import { NearLedger } from "./ledger.ts";
-import { Scheduler } from "./scheduler.ts";
+import { Scheduler, type Ledgers } from "./scheduler.ts";
 import { Store } from "./store.ts";
 
 const DEFAULT_MODEL = "Qwen/Qwen3.8-27B";
@@ -31,10 +31,27 @@ const need = (k: string): string => {
   return v;
 };
 
-const chain = new Chain((process.env.NEAR_NETWORK ?? "testnet") as Network, need("NEAR_RPC_URL"));
-const treasurer = chain.account(need("TREASURER_ACCOUNT_ID"), need("TREASURER_FC_PRIVATE_KEY"));
-const ledger = new NearLedger(chain, need("ROTA_CONTRACT_ID"), need("ROTA_TOKEN_ID"), treasurer);
-console.log(`treasurer key: ${await ledger.checkTreasurerKey()}`);
+/** A network's ledger, with its treasurer key checked on chain; undefined if not configured. */
+async function ledgerFor(net: Network, prefix: string, rpcDefault?: string): Promise<NearLedger | undefined> {
+  const env = (k: string) => process.env[`${prefix}${k}`];
+  const rpc = env("NEAR_RPC_URL") || rpcDefault;
+  const contract = env("ROTA_CONTRACT_ID");
+  const treasurerId = env("TREASURER_ACCOUNT_ID");
+  const key = env("TREASURER_FC_PRIVATE_KEY");
+  if (!rpc || !contract || !treasurerId || !key) return undefined;
+  const chain = new Chain(net, rpc);
+  const ledger = new NearLedger(chain, contract, env("ROTA_TOKEN_ID") || MAINNET_USDC, chain.account(treasurerId, key));
+  console.log(`${net} treasurer key: ${await ledger.checkTreasurerKey()}`);
+  return ledger;
+}
+
+const MAINNET_USDC = "17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1";
+need("ROTA_CONTRACT_ID");
+const ledgers: Ledgers = {};
+ledgers.testnet = await ledgerFor("testnet", "");
+ledgers.mainnet = await ledgerFor("mainnet", "MAINNET_", "https://rpc.mainnet.fastnear.com,https://free.rpc.fastnear.com");
+if (!ledgers.testnet) throw new Error("the testnet treasurer isn't configured (NEAR_RPC_URL, ROTA_CONTRACT_ID, TREASURER_ACCOUNT_ID, TREASURER_FC_PRIVATE_KEY)");
+if (!ledgers.mainnet) console.log("mainnet: not configured (launching soon); /circle … mainnet will say so");
 
 const store = new Store(process.env.BOT_STATE_PATH || fileURLToPath(new URL("../data/state.json", import.meta.url)));
 const ai = new NearAi({
@@ -52,10 +69,10 @@ const transcript = transcriptPath
   : undefined;
 
 const html = { parse_mode: "HTML" as const, link_preview_options: { is_disabled: true } };
-const scheduler = new Scheduler(ledger, store, async (chat, text) => {
+const scheduler = new Scheduler(ledgers, store, async (chat, text) => {
   await bot.api.sendMessage(chat, text, html);
 });
-const bot = createBot(need("TELEGRAM_BOT_TOKEN"), { ledger, store, ai, scheduler, transcript, webUrl: process.env.WEB_URL || undefined });
+const bot = createBot(need("TELEGRAM_BOT_TOKEN"), { ledgers, store, ai, scheduler, transcript, webUrl: process.env.WEB_URL || undefined });
 
 await bot.init();
 if (bot.botInfo.can_read_all_group_messages) {

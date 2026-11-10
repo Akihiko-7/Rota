@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
-import { Card, TxButton } from "../components/ui";
+import { Card, LaunchingSoon, TxButton } from "../components/ui";
+import { isLive } from "../config";
 import { every, parseUsdc, usdc } from "../lib/format";
+import { useNet } from "../lib/net";
 import { navigate } from "../lib/router";
-import { tx, validate, type NewCircle as Draft } from "../lib/rota";
+import { txs, validate, type NewCircle as Draft } from "../lib/rota";
 import { useWallet } from "../near/wallet";
 
 const ROUNDS: [number, string][] = [
@@ -21,7 +23,14 @@ const GRACE: [number, string][] = [
 ];
 
 export function NewCircle() {
+  const { cfg } = useNet();
+  if (!isLive(cfg)) return <LaunchingSoon />;
+  return <NewCircleForm />;
+}
+
+function NewCircleForm() {
   const { accountId } = useWallet();
+  const { net, cfg, to } = useNet();
   const [name, setName] = useState("");
   const [members, setMembers] = useState("");
   const [amount, setAmount] = useState("10");
@@ -44,6 +53,7 @@ export function NewCircle() {
   }
 
   return (
+    <div className="form-grid">
     <Card title="Start a circle">
       <p className="muted">You'll be a member. Everyone you add joins with their own wallet; the circle starts once they all have.</p>
       <label>
@@ -56,14 +66,14 @@ export function NewCircle() {
           value={members}
           onChange={(e) => setMembers(e.target.value)}
           rows={4}
-          placeholder={"bao.testnet\ncarmen.testnet"}
+          placeholder={net === "testnet" ? "bao.testnet\ncarmen.testnet" : "bao.near\ncarmen.near"}
           autoCapitalize="off"
           spellCheck={false}
         />
         <span className="small muted">One per line. 2 to 10 members including you{accountId ? ` (${accountId})` : ""}.</span>
       </label>
       <label>
-        Amount each member pays per round (USDC)
+        Amount each member pays per round ({net === "testnet" ? "test USDC" : "USDC"})
         <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
       </label>
       <label>
@@ -92,19 +102,12 @@ export function NewCircle() {
         <span className="small muted">Covers a missed payment. It comes back at the end, minus anything used.</span>
       </label>
 
-      {draft && !problem && (
-        <p className="summary">
-          {draft.members.length} members each pay {usdc(draft.contribution)} every {every(draft.roundSec)}. There are {draft.members.length} rounds, and each
-          member receives {usdc(draft.contribution * BigInt(draft.members.length))} once.
-        </p>
-      )}
       {problem && (name || members) && <p className="err">{problem}</p>}
-      <p className="small muted">Creating a circle sets aside 0.2 NEAR for storage; anything unused is refunded.</p>
       {draft && !problem ? (
         <TxButton
-          tx={tx.create(draft)}
+          tx={txs(cfg).create(draft)}
           onDone={(sent) => {
-            if (typeof sent.result === "string") navigate(`/c/${sent.result}`);
+            if (typeof sent.result === "string") navigate(to(`/c/${sent.result}`));
           }}
         >
           Create the circle
@@ -115,5 +118,24 @@ export function NewCircle() {
         </button>
       )}
     </Card>
+    <aside className="form-side">
+      <Card title="Your circle">
+        {draft && !problem ? (
+          <p className="summary">
+            {draft.members.length} members each pay {usdc(draft.contribution)} every {every(draft.roundSec)}. There are {draft.members.length} rounds, and
+            each member receives {usdc(draft.contribution * BigInt(draft.members.length))} once.
+          </p>
+        ) : (
+          <p className="muted">Fill in the form to see how the circle will run.</p>
+        )}
+        <ul className="small fineprint">
+          <li>The token is {net === "testnet" ? "test USDC" : "USDC"} ({cfg.tokenNote}).</li>
+          <li>Creating a circle sets aside 0.2 NEAR for storage; what isn't used is refunded straight away. About 0.012 NEAR per member stays with the circle.</li>
+          <li>The payout order is fixed when the circle starts: members with a deposit or a clean payment record go first.</li>
+          <li>The AI treasurer pays each round out as soon as everyone has paid, or when the grace period ends.</li>
+        </ul>
+      </Card>
+    </aside>
+    </div>
   );
 }

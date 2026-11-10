@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { KeyPair, KeyPairSigner } from "near-api-js";
 import { every, list, parseUsdc, short, span, usdc } from "./format";
 import { base64ToBytes, linkMessage, LINK_RECIPIENT, signatureBase64 } from "./link";
-import { tx, validate } from "./rota";
+import { txs, validate } from "./rota";
+import networks from "../generated/networks.json";
+
+const tx = txs(networks.testnet);
 
 describe("format", () => {
   it("shows and parses amounts", () => {
@@ -59,5 +62,14 @@ describe("circle form", () => {
     expect(JSON.parse((pay.actions[0].params.args as { msg: string }).msg)).toEqual({ circle_id: "5", kind: "contribution" });
     expect(tx.create(ok).actions[0].params.deposit).toBe((10n ** 23n * 2n).toString());
     expect(tx.settle("5").actions[0].params).toMatchObject({ methodName: "settle", deposit: "0" });
+  });
+});
+
+describe("networks", () => {
+  it("mainnet uses real USDC and isn't live until the contract is deployed", () => {
+    expect(networks.mainnet.tokenId).toBe("17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1");
+    expect(networks.mainnet.explorer).toBe("https://nearblocks.io");
+    expect(() => txs(networks.mainnet).faucet("a.near", true)).toThrow(/only exists on testnet/);
+    expect(txs(networks.testnet).pay("1", "contribution", "1").receiverId).toBe("usdc-mock.rota-nearhack.testnet");
   });
 });
