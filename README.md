@@ -2,6 +2,8 @@
 
 Your savings circle has an AI treasurer, and even the AI can't steal the money.
 
+**Live: [rota-alpha-seven.vercel.app](https://rota-alpha-seven.vercel.app)** · Telegram bot: [@RotaNear_Bot](https://t.me/RotaNear_Bot)
+
 Rota is a rotating savings circle (susu, tanda, chama, chit fund, hui) on NEAR. N members each pay a fixed amount every round, and each round one member receives the whole pot. A contract holds the money and pays each round to the scheduled member. An AI treasurer coordinates the circle, but its only key can call `settle` and nothing else.
 
 > **Status: work in progress (NEAR HACKATHON, Nov 2026).**
@@ -13,7 +15,7 @@ Rota is a rotating savings circle (susu, tanda, chama, chit fund, hui) on NEAR. 
 > | Treasurer key | Real and on testnet: an account whose only key can call `settle` on the circle |
 > | Telegram bot (`bot/`) | Commands, status reads, reminders, auto-settle with the treasurer key, `/redteam`, account linking. Tested with a mocked LLM and Telegram, and against a local sandbox. Ran a full circle live in a test group (circle 5 on circle-v2) |
 > | AI answers (NEAR AI Cloud) | Working live with `Qwen/Qwen3.8-27B` (tool calling confirmed, about $0.0003 per question). Tests use a mocked endpoint |
-> | Web app (`web/`) | Read-only pages work without a wallet: live proof checks, the finished demo circle, any circle by number. With a wallet: create, join, deposit, start, pay, pay out, swap turns, close by vote, and the NEP-413 page for the bot's `/link`. The full flow passes end-to-end browser tests on testnet. **Not deployed yet** (ready for Vercel) |
+> | Web app (`web/`) | Read-only pages work without a wallet: live proof checks, the finished demo circle, any circle by number. With a wallet: create, join, deposit, start, pay, pay out, swap turns, close by vote, and the NEP-413 page for the bot's `/link`. The full flow passes end-to-end browser tests on testnet. **Live** at [rota-alpha-seven.vercel.app](https://rota-alpha-seven.vercel.app) (Vercel) |
 > | Cross-chain pay (NEAR Intents) | **Mainnet only. Built, not yet used with real money.** The circle page asks the 1Click API for a deposit address on Base, Arbitrum, Solana, Polygon or Ethereum, then follows the swap until the USDC arrives in the member's own NEAR account, where they press Pay as usual (two steps, see [docs/PHASE0.md](docs/PHASE0.md)). Checked against live 1Click price quotes for all five chains, and in a browser with the API mocked. The first real swap is planned for the mainnet circle on 13 Nov. On testnet it shows disabled, labelled "Mainnet only" |
 > | Harvest, group staking (`contract/harvest`) | **Testnet only.** Sandbox tests pass. Locked `harvest-v1.rota-nearhack.testnet` is running its first real pot (17 test NEAR in `aurora.pool.f863973.m0`); results will be added when it ripens |
 > | Mainnet | **Not deployed yet.** The web app shows mainnet as "launching soon" with actions disabled |
@@ -150,7 +152,7 @@ The landing page also shows the finished demo circle (circle 5) with each payout
 - `/testnet/start` is "Try it free": a test wallet, the NEAR faucet, the "Get test USDC" button, and trying a circle.
 - The screenshots come from the real app, captured by [e2e/tutorial-shots.spec.ts](web/e2e/tutorial-shots.spec.ts). The one-page guide for the real mainnet circle is [docs/mainnet-member-guide.md](docs/mainnet-member-guide.md).
 
-**Deploying on Vercel:** import the repo, set the Root Directory to `web`, and deploy. [web/vercel.json](web/vercel.json) sets the Vite build, the single-page-app rewrites and security headers. No environment variables are needed. Contract IDs and the expected code hash come from [web/src/generated/chain.json](web/src/generated/chain.json); regenerate it with `node scripts/sync-web.ts` after a redeploy.
+**Deploying on Vercel:** import the repo, set the Root Directory to `web`, and deploy. [web/vercel.json](web/vercel.json) sets the Vite build, the single-page-app rewrites and security headers. No environment variables are needed. Contract IDs and the expected code hash come from [web/src/generated/networks.json](web/src/generated/networks.json); regenerate it with `node scripts/sync-web.ts` after a redeploy.
 
 ## Harvest: group staking (testnet only)
 
