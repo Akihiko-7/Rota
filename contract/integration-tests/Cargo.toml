@@ -11,3 +11,4 @@ tokio = { version = "1", features = ["full"] }
 # near-workspaces pulls in native-tls; build OpenSSL from source so the tests
 # don't need libssl-dev / pkg-config on the host.
 openssl = { version = "0.10", features = ["vendored"] }
+serde_json = "1"

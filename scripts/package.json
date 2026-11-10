@@ -2,5 +2,8 @@
   "name": "@rota/scripts",
   "private": true,
   "version": "0.0.0",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "near-api-js": "7.4.0"
+  }
 }

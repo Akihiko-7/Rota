@@ -30,7 +30,11 @@ async fn treasurer_key_can_only_call_settle_on_the_circle() -> anyhow::Result<()
         .batch(treasurer.id())
         .add_key(
             fc_key.public_key(),
-            AccessKey::function_call_access(circle.id(), &["settle"], Some(NearToken::from_near(1))),
+            AccessKey::function_call_access(
+                circle.id(),
+                &["settle"],
+                Some(NearToken::from_near(1)),
+            ),
         )
         .transact()
         .await?;
@@ -40,15 +44,29 @@ async fn treasurer_key_can_only_call_settle_on_the_circle() -> anyhow::Result<()
 
     // 1. A plain Transfer needs a full-access key. (1 yocto, so the allowance
     //    check can't be what rejects it.)
-    let err = failure(ai.transfer_near(attacker.id(), NearToken::from_yoctonear(1)).await.map_err(Into::into));
+    let err = failure(
+        ai.transfer_near(attacker.id(), NearToken::from_yoctonear(1))
+            .await
+            .map_err(Into::into),
+    );
     assert!(err.contains("RequiresFullAccess"), "{err}");
 
     // 2. Any other method on the circle contract.
-    let err = failure(ai.call(circle.id(), "withdraw").transact().await.map_err(Into::into));
+    let err = failure(
+        ai.call(circle.id(), "withdraw")
+            .transact()
+            .await
+            .map_err(Into::into),
+    );
     assert!(err.contains("MethodNameMismatch"), "{err}");
 
     // 3. `settle` on any other contract.
-    let err = failure(ai.call(attacker.id(), "settle").transact().await.map_err(Into::into));
+    let err = failure(
+        ai.call(attacker.id(), "settle")
+            .transact()
+            .await
+            .map_err(Into::into),
+    );
     assert!(err.contains("ReceiverMismatch"), "{err}");
 
     // 4. `settle` with tokens attached.
@@ -64,7 +82,10 @@ async fn treasurer_key_can_only_call_settle_on_the_circle() -> anyhow::Result<()
     // 5. Adding itself a stronger key.
     let err = failure(
         ai.batch(treasurer.id())
-            .add_key(SecretKey::from_random(KeyType::ED25519).public_key(), AccessKey::full_access())
+            .add_key(
+                SecretKey::from_random(KeyType::ED25519).public_key(),
+                AccessKey::full_access(),
+            )
             .transact()
             .await
             .map_err(Into::into),
@@ -73,7 +94,12 @@ async fn treasurer_key_can_only_call_settle_on_the_circle() -> anyhow::Result<()
 
     // 6. The one allowed call passes key validation. The circle account has no
     //    code yet, so execution fails later with a different error.
-    let err = failure(ai.call(circle.id(), "settle").transact().await.map_err(Into::into));
+    let err = failure(
+        ai.call(circle.id(), "settle")
+            .transact()
+            .await
+            .map_err(Into::into),
+    );
     assert!(!err.contains("InvalidAccessKeyError"), "{err}");
 
     Ok(())
