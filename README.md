@@ -123,6 +123,37 @@ The landing page also shows the finished demo circle (circle 5) with each payout
 
 **Deploying on Vercel:** import the repo, set the Root Directory to `web`, and deploy. [web/vercel.json](web/vercel.json) sets the Vite build, the single-page-app rewrites and security headers. No environment variables are needed. Contract IDs and the expected code hash come from [web/src/generated/chain.json](web/src/generated/chain.json); regenerate it with `node scripts/sync-web.ts` after a redeploy.
 
+## Harvest: group staking (testnet only)
+
+Members put NEAR into one pot. When the filling window closes, the whole pot is staked with one validator pool, fixed when the pot is created, for a fixed number of epochs. After the term it's unstaked. NEAR's staking pools hold unstaked funds for 4 epochs, and when that wait is over the pot is withdrawn ("ripe"). Then it's shared out: each depositor gets their deposit back plus their share of the rewards, in proportion to what they put in. The contract is [contract/harvest](contract/harvest/src/lib.rs).
+
+**Safety model:**
+- **Only depositors get paid, pro-rata.** No method takes a recipient.
+- **Permissionless steps.** `stake`, `unstake`, `withdraw` and `distribute` each check their own preconditions, so the bot's Harvest key, limited to exactly those four methods, can drive a pot and do nothing else.
+- **No early exit.** Depositors can take their deposit back until staking starts, and nobody can after that until the pot is ripe.
+- **One pot per pool at a time.** This contract's balance in a pool always belongs to exactly one pot.
+- **Exact credit.** `withdraw` reads the pool's unstaked balance first and withdraws exactly that, so a pot is credited only with what the pool actually returned.
+- **Exact sharing.** Sharing uses exact 256-bit arithmetic. The few yoctoNEAR left over by rounding go to the largest remainders, so the shares always add up to exactly what came back.
+
+**Real numbers, not invented ones:**
+- The web app shows rewards **read from the pool** (what the contract holds there minus what was deposited).
+- It shows the pool's current APY, **calculated from NEAR's on-chain reward parameters** (yearly inflation, the validators' share, total supply over total stake) less the pool's fee. On testnet today that's 9.00% for `aurora.pool.f863973.m0`.
+- Any projection is labelled as a projection.
+- The ripe date is an estimate from current epoch timing. A testnet epoch is 43,200 blocks, about 7 hours at the current 0.59 s block time, and the pool unlocks 4 epochs after unstaking.
+
+**The mock pool:** [contract/mock-pool](contract/mock-pool/src/lib.rs) mirrors near/core-contracts `staking-pool` (methods, arguments, share rounding, 4-epoch unlock, rewards detected as balance growth) for the sandbox tests. A live check on an unlocked `harvest-v0` with 0.2 test NEAR confirmed the real `aurora.pool.f863973.m0` behaves the same: `deposit_and_stake` accepted through the restricted key, 5 yocto of share rounding left unstaked, and balances read back exactly.
+
+**Tests:**
+- Exact sharing with uneven deposits and rounding dust, in [contract/harvest](contract/harvest/src/lib.rs).
+- Sandbox tests in [tests/harvest.rs](contract/integration-tests/tests/harvest.rs):
+  - deposits, and early withdrawal only before staking;
+  - the full lifecycle to the yoctoNEAR;
+  - nobody can redirect funds (restricted key, injected recipient, private callbacks);
+  - a refused stake is refunded.
+- Bot tests for `/harvest` and the ripe reminder.
+
+**In Telegram:** `/harvest <id>` shows a pot and follows it. The bot then takes each step as soon as it's allowed, posts when the pot is staked and unstaked, sends a reminder when it's ripe, and shares it out. Harvest is testnet only: on mainnet the web app says "testnet only for now" and the bot does the same.
+
 ## On testnet
 
 | Account | What | Keys |

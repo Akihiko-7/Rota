@@ -46,7 +46,7 @@ const out = {
       redteam: demo.redteam_settle_attempt as { hash: string; note: string },
     },
     /** Circles created by automated browser tests, labelled as such on their pages. */
-    testRuns: ["6", "7", "8", "9", "10"],
+    testRuns: ["6", "7", "8", "9", "10", "12"],
     /** Group staking (Harvest), testnet only. */
     harvest: {
       contractId: process.env.HARVEST_CONTRACT_ID || "harvest-v1.rota-nearhack.testnet",
