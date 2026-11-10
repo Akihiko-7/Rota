@@ -9,6 +9,8 @@
 //                          ROTA_TOKEN_ID, TREASURER_*); takes ~7 minutes of real
 //                          time. Demo member accounts are created on first run.
 //                          Add `-- --resume <circle_id>` to finish an interrupted run.
+//                          `-- --setup-only` stops before start; `-- --bot` leaves
+//                          settling to the running treasurer bot.
 
 import { Chain } from "./lib/near.ts";
 import { getKey, saveKey } from "./lib/keys.ts";
@@ -73,7 +75,13 @@ async function testnet(): Promise<void> {
     const ms = await members(chain, root, tokenId, true);
     const i = process.argv.indexOf("--resume");
     const resume = i > 0 ? process.argv[i + 1] : undefined;
-    const id = await demoCycle({ chain, circleId, tokenId, members: ms, treasurer, resume });
+    const setupOnly = process.argv.includes("--setup-only");
+    const botSettles = process.argv.includes("--bot");
+    const id = await demoCycle({ chain, circleId, tokenId, members: ms, treasurer, resume, setupOnly, botSettles });
+    if (setupOnly) {
+      appendRun(`demo setup ${circleId} circle ${id}`, chain.log);
+      return;
+    }
     console.log(`\nDemo passed: ${chain.log.length} transactions, all checks held.`);
     appendRun(`demo ${circleId} circle ${id}${resume ? " (resumed)" : ""}`, chain.log);
   } catch (e) {

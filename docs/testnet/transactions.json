@@ -1244,5 +1244,20 @@
         "url": "https://testnet.nearblocks.io/txns/jgNF9Khd58PrRMD9aacQPVUSPLNsJ81mVb4V7dSSm29"
       }
     ]
+  },
+  {
+    "run": "faucet top-up of rota-nearhack.testnet",
+    "at": "2026-11-10T06:20:29.049Z",
+    "transactions": [
+      {
+        "label": "delete rota-topup-5cbe64c4.testnet, sending its balance to rota-nearhack.testnet",
+        "hash": "96xXZg8B8rXDsJwSZ7q2uNJNR81yfqQkDFoyTPDQW36c",
+        "signer": "rota-topup-5cbe64c4.testnet",
+        "receiver": "rota-topup-5cbe64c4.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/96xXZg8B8rXDsJwSZ7q2uNJNR81yfqQkDFoyTPDQW36c",
+        "note": "Succeeded: the balance reached the deployer. The script first flagged it as failed because the gas refund to the deleted account fails by design."
+      }
+    ]
   }
 ]

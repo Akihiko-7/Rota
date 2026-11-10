@@ -14,6 +14,8 @@
   "scripts": {
     "test": "cd contract && cargo test",
     "demo:sandbox": "node scripts/demo-round.ts --sandbox",
-    "demo:testnet": "node scripts/demo-round.ts"
+    "demo:testnet": "node scripts/demo-round.ts",
+    "test:bot": "npm test -w bot && npm run test:sandbox -w bot",
+    "bot": "npm start -w bot"
   }
 }

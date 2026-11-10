@@ -24,3 +24,7 @@ target/
 
 # local working notes (contain personal details)
 BRIEF.md
+
+# bot runtime
+bot/bot.env
+bot/data/

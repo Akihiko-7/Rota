@@ -2,7 +2,7 @@
 // sandbox that needs no secrets. Every transaction goes through `send`, which
 // prints its hash (and explorer link on testnet) and records it.
 
-import { Account, JsonRpcProvider, actions, getTransactionLastResult, nearToYocto } from "near-api-js";
+import { Account, FailoverRpcProvider, JsonRpcProvider, actions, getTransactionLastResult, nearToYocto } from "near-api-js";
 import type { KeyPairString } from "near-api-js";
 
 export type Network = "testnet" | "sandbox";
@@ -24,16 +24,47 @@ export interface TxRecord {
   url?: string;
 }
 
+/** Timeouts, unreachable hosts, rate limits and gateway errors: worth trying another RPC. */
+export function isNetworkError(e: unknown): boolean {
+  const text = `${e instanceof Error ? e.message : e} ${JSON.stringify((e as { cause?: unknown })?.cause ?? "")}`;
+  return /fetch failed|ETIMEDOUT|ENETUNREACH|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket|timeout|429|50[234]/i.test(text);
+}
+
+/**
+ * near-api-js's FailoverRpcProvider, changed to fail over only on network
+ * errors. Other errors (e.g. "Access key does not allow method claim") are
+ * thrown unchanged instead of being retried and wrapped in a generic
+ * "Exceeded N providers" error. Uses the 7.4.0 internals (pinned exactly).
+ */
+class NetworkFailover extends FailoverRpcProvider {
+  async withBackoff<T>(getResult: (provider: JsonRpcProvider) => Promise<T>): Promise<T> {
+    const self = this as unknown as { providers: JsonRpcProvider[]; currentProvider: JsonRpcProvider; switchToNextProvider(): void };
+    let last: unknown;
+    for (let i = 0; i < self.providers.length; i++) {
+      try {
+        return await getResult(self.currentProvider);
+      } catch (e) {
+        if (!isNetworkError(e)) throw e;
+        last = e;
+        self.switchToNextProvider();
+      }
+    }
+    throw last;
+  }
+}
+
 export class Chain {
   readonly network: Network;
   readonly rpcUrl: string;
-  readonly provider: JsonRpcProvider;
+  readonly provider: FailoverRpcProvider;
   readonly log: TxRecord[] = [];
 
+  /** `rpcUrl` may list several endpoints, comma-separated; calls fail over between them. */
   constructor(network: Network, rpcUrl: string) {
     this.network = network;
-    this.rpcUrl = rpcUrl;
-    this.provider = new JsonRpcProvider({ url: rpcUrl });
+    const urls = rpcUrl.split(",").map((u) => u.trim()).filter(Boolean);
+    this.rpcUrl = urls[0];
+    this.provider = new NetworkFailover(urls.map((url) => new JsonRpcProvider({ url })));
   }
 
   txUrl(hash: string): string | undefined {
@@ -106,7 +137,7 @@ export class Chain {
     signer: Account,
     receiverId: string,
     txActions: Action[],
-    opts: { expectFailure?: boolean } = {},
+    opts: { expectFailure?: boolean; allowFailure?: boolean } = {},
   ): Promise<TxResult> {
     const res = await signer.signAndSendTransaction({
       receiverId,
@@ -124,19 +155,23 @@ export class Chain {
     console.log(`  ${mark} ${label}`);
     console.log(`      tx ${hash}${rec.url ? `  ${rec.url}` : ""}`);
     if (error) console.log(`      error: ${error}`);
+    if (opts.allowFailure) return res;
     if (error && !opts.expectFailure) throw new Error(`${label} failed: ${error}`);
     if (!error && opts.expectFailure) throw new Error(`${label} was expected to fail but succeeded`);
     return res;
   }
 
-  /** `send` for a single function call. */
+  /**
+   * `send` for a single function call. With `allowFailure`, returns failed
+   * transactions instead of throwing (read the error with `failureOf`).
+   */
   call(
     label: string,
     signer: Account,
     contractId: string,
     method: string,
     args: Record<string, unknown>,
-    opts: { gas?: bigint; deposit?: bigint; expectFailure?: boolean } = {},
+    opts: { gas?: bigint; deposit?: bigint; expectFailure?: boolean; allowFailure?: boolean } = {},
   ): Promise<TxResult> {
     const action = actions.functionCall(method, args, opts.gas ?? 30n * TGAS, opts.deposit ?? 0n);
     return this.send(label, signer, contractId, [action], opts);
@@ -154,21 +189,27 @@ async function retryReads<T>(read: () => Promise<T>): Promise<T> {
     try {
       return await read();
     } catch (e) {
-      const text = `${e instanceof Error ? e.message : e} ${JSON.stringify((e as { cause?: unknown })?.cause ?? "")}`;
-      const network = /fetch failed|ETIMEDOUT|ENETUNREACH|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket|timeout|429|50[234]/i.test(text);
-      if (!network || attempt >= 24) throw e;
-      console.log(`      (RPC unreachable, retrying read in 5 s: ${text.slice(0, 80)})`);
+      if (!isNetworkError(e) || attempt >= 24) throw e;
+      console.log(`      (RPC unreachable, retrying read in 5 s: ${(e instanceof Error ? e.message : String(e)).slice(0, 80)})`);
       await new Promise((r) => setTimeout(r, 5_000));
     }
   }
 }
 
-/** The first failure in the transaction or any of its receipts, as text. */
-function failureOf(res: TxResult): string | undefined {
+/**
+ * The first failure in the transaction or any of its receipts, as text.
+ * Ignores the one expected failure: after a DeleteAccount, the gas refund to
+ * the deleted signer fails with AccountDoesNotExist.
+ */
+export function failureOf(res: TxResult): string | undefined {
+  const signer = res.transaction.signer_id;
   const outcomes = [res.transaction_outcome, ...res.receipts_outcome];
   for (const o of outcomes) {
     const status = o.outcome.status as Record<string, unknown>;
-    if (status && typeof status === "object" && "Failure" in status) return describe(status.Failure);
+    if (!status || typeof status !== "object" || !("Failure" in status)) continue;
+    const text = JSON.stringify(status.Failure);
+    if (o.outcome.executor_id === signer && text.includes(`"AccountDoesNotExist":{"account_id":"${signer}"}`)) continue;
+    return describe(status.Failure);
   }
   const top = res.status as Record<string, unknown>;
   if (top && typeof top === "object" && "Failure" in top) return describe(top.Failure);

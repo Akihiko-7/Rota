@@ -164,9 +164,21 @@ interface Reputation {
  * pot, then misses round 1, so after the grace period the contract records a
  * default and slashes their bond into that round's pot.
  *
- * With `resume`, picks up an interrupted demo circle from its on-chain state.
+ * With `resume`, picks up a demo circle from its on-chain state (forming or
+ * active). With `setupOnly`, stops before `start`, so a Telegram group can
+ * follow the circle from round 1. With `botSettles`, the script only pays and
+ * waits for the treasurer bot to settle each round.
  */
-export async function demoCycle(opts: { chain: Chain; circleId: string; tokenId: string; members: Account[]; treasurer: Account; resume?: string }): Promise<string> {
+export async function demoCycle(opts: {
+  chain: Chain;
+  circleId: string;
+  tokenId: string;
+  members: Account[];
+  treasurer: Account;
+  resume?: string;
+  setupOnly?: boolean;
+  botSettles?: boolean;
+}): Promise<string> {
   const { chain, circleId, tokenId, members, treasurer } = opts;
   const ids = members.map((m) => m.accountId);
   const [creator] = members;
@@ -206,11 +218,19 @@ export async function demoCycle(opts: { chain: Chain; circleId: string; tokenId:
       await chain.call(`${m.accountId} joins`, m, circleId, "join", { circle_id: id }, { gas: 100n * TGAS, deposit: near("0.05") });
     }
     await pay(bonded, "bond", BOND, `${bonded.accountId} posts the 10 USDC bond for an early slot`);
+    if (opts.setupOnly) {
+      console.log(`\nCircle ${id} is set up and waiting to start. Follow it in Telegram with /circle ${id}, then run with --resume ${id}.`);
+      return id;
+    }
     await chain.call(`${creator.accountId} starts the circle`, creator, circleId, "start", { circle_id: id }, { gas: 50n * TGAS });
   } else {
     id = opts.resume;
-    const c = await view<Circle>("get_circle", { circle_id: id });
-    assert.equal(c.status, "Active", `circle ${id} is ${c.status}; only an active demo circle can be resumed`);
+    let c = await view<Circle>("get_circle", { circle_id: id });
+    if (c.status === "Forming") {
+      await chain.call(`${creator.accountId} starts the circle`, creator, circleId, "start", { circle_id: id }, { gas: 50n * TGAS });
+      c = await view<Circle>("get_circle", { circle_id: id });
+    }
+    assert.equal(c.status, "Active", `circle ${id} is ${c.status}; only a forming or active demo circle can be resumed`);
     // Balances before the circle: undo what each member has paid in and received so far.
     const { paid } = await view<{ paid: string[] }>("get_round_status", { circle_id: id });
     start = start.map((b, i) => {
@@ -241,8 +261,17 @@ export async function demoCycle(opts: { chain: Chain; circleId: string; tokenId:
   }
 
   async function settle(round: number, label: string, expectFailure = false) {
-    await chain.call(label, treasurer, circleId, "settle", { circle_id: id }, { gas: 300n * TGAS, expectFailure });
-    if (expectFailure) return;
+    if (opts.botSettles) {
+      if (expectFailure) return;
+      console.log(`      waiting for the treasurer bot to settle round ${round}...`);
+      for (let i = 0; (await view<Circle>("get_circle", { circle_id: id })).history.length <= round; i++) {
+        if (i > 200) throw new Error(`the bot did not settle round ${round} within 10 minutes`);
+        await new Promise((r) => setTimeout(r, 3_000));
+      }
+    } else {
+      await chain.call(label, treasurer, circleId, "settle", { circle_id: id }, { gas: 300n * TGAS, expectFailure });
+      if (expectFailure) return;
+    }
     const rec = (await view<Circle>("get_circle", { circle_id: id })).history[round];
     console.log(`      round ${round}: ${fmt(BigInt(rec.amount))} USDC paid to ${rec.recipient}` + (rec.missed.length ? `; missed by ${rec.missed.join(", ")}, ${fmt(BigInt(rec.slashed))} USDC of bond slashed into the pot` : ""));
     return rec;
@@ -261,7 +290,7 @@ export async function demoCycle(opts: { chain: Chain; circleId: string; tokenId:
     }
 
     console.log(`      ${defaulter} already received a pot and does not pay this round`);
-    if ((await chain.nowMs()) <= status.grace_ends_ms) {
+    if (!opts.botSettles && (await chain.nowMs()) <= status.grace_ends_ms) {
       await settle(round, "treasurer tries to settle early: refused by the contract, a payment is missing", true);
       await tryAbuse(chain, treasurer, tokenId, circleId, id);
       console.log(`      waiting for the deadline plus grace period (block time ${new Date(status.grace_ends_ms).toISOString()})...`);

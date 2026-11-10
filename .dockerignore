@@ -1,0 +1,10 @@
+# Allowlist: only what the bot image needs. Keeps .env, credentials/,
+# BRIEF.md and build output out of the build context.
+*
+!package.json
+!package-lock.json
+!bot/package.json
+!bot/src/
+!scripts/package.json
+!scripts/lib/
+!web/package.json

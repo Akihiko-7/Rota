@@ -9,9 +9,11 @@ Rota is a rotating savings circle (susu, tanda, chama, chit fund, hui) on NEAR. 
 > | Part | State |
 > |---|---|
 > | Circle contract (`contract/circle`) | Sandbox tests pass. Deployed and **locked** on testnet as `circle-v2.rota-nearhack.testnet`; full cycles run on-chain. Not on mainnet |
-> | Mock NEP-141 (`contract/mock-ft`) | Used in tests and on testnet (`usdc-mock.rota-nearhack.testnet`). **Mock: anyone can mint** |
-> | Treasurer key | Real and on testnet: an account whose only key can call `settle` on the circle. The demo script drives it; **the AI is not connected yet** |
-> | AI treasurer bot (`bot/`) | Not started |
+> | Mock NEP-141 (`contract/mock-ft`) | **A freely mintable test token, not USDC and worth nothing.** Anyone can call `mint`. Used in tests and on testnet as `usdc-mock.rota-nearhack.testnet` |
+> | Treasurer key | Real and on testnet: an account whose only key can call `settle` on the circle |
+> | Telegram bot (`bot/`) | Commands, status reads, reminders, auto-settle with the treasurer key, `/redteam`, account linking. Tested with a mocked LLM and Telegram, and against a local sandbox |
+> | AI answers (NEAR AI Cloud) | Built and tested with a mocked endpoint. **Not working live yet:** our NEAR AI account returns HTTP 402 (no credits), and the bot says so in chat. Model attestation works |
+> | Account-link signing page | **Not built yet** (web app). Links stay unverified until a NEP-413 signature is sent with `/verify` |
 > | Web app (`web/`) | Not started |
 >
 > Phase 0 findings (API checks, design consequences) are in [docs/PHASE0.md](docs/PHASE0.md).
@@ -36,13 +38,62 @@ It starts a local NEAR sandbox (the first run downloads the ~90 MB sandbox binar
 
 The script checks each of these and exits non-zero if any fails. `npm run demo:testnet` runs the same cycle against the testnet contracts in `.env`; it takes about 7 minutes of real time.
 
+## The Telegram bot
+
+[@RotaNear_Bot](https://t.me/RotaNear_Bot) is the circle's treasurer in a Telegram group. Without any LLM it:
+- posts each payment as it lands, reminds unpaid members once before the deadline and once after it, and announces every settled round with its transaction;
+- settles each round with the treasurer key as soon as the contract allows it;
+- answers `/status`, `/order`, `/history`, `/pay`, `/rep`, `/settle`, `/redteam`, `/link`, `/verify` and `/swap`.
+
+On top of that, `/ask` and messages that mention the bot go to NEAR AI Cloud (`Qwen/Qwen3.8-27B` by default, a model served from a TEE with attestation; `/attest` fetches the report with a fresh nonce). The model can read circle state and call one action, `settle_round`. **There is no fallback to another LLM provider:** if NEAR AI is unreachable or refuses the request, the bot says so and the commands keep working.
+
+### Even a compromised bot can at worst call settle
+
+The bot server holds one NEAR key: the treasurer's function-call key. It never holds member keys or the deployer key.
+- **NEAR enforces the limit.** The key's on-chain permission is receiver `circle-v2…`, methods `[settle]`. NEAR rejects anything else before it executes: transfers, other methods, other contracts, attached deposits.
+- **The contract picks the recipient.** `settle` takes only a circle id and pays `order[current_round]`, and only when everyone has paid or the grace period has ended.
+- **The bot checks its own key at startup** and refuses to run if it's a full-access key or allows anything but `settle` on this contract.
+- **It reads only the variables it needs** ([bot/src/config.ts](bot/src/config.ts)); any other `*PRIVATE_KEY` in the environment is dropped.
+
+So someone who takes over the server, the Telegram account or the LLM can at worst call `settle`, which settles a round the contract already allows to be settled. `/redteam` shows this live in the group. It signs three real attempts with the treasurer key and posts NEAR's answer to each:
+1. a direct `ft_transfer` of the pot on the token contract: rejected by NEAR, "Access key receiver … does not match transaction receiver …";
+2. `claim`, a method the key doesn't allow: rejected by NEAR, "Access key does not allow method claim";
+3. `settle` with an injected `"recipient"`: executed (with its tx hash), and the contract ignores the extra argument and pays the scheduled member, or refuses because the round can't be settled yet.
+
+### Linking Telegram users to NEAR accounts
+
+`/link <account>` records an **unverified** link and shows a NEP-413 message (`message`, `recipient: rota-bot`, a fresh 32-byte nonce). `/verify <public_key> <signature>` checks the signature and that the key is a full-access key of that account, using near-api-js's `verifyMessage`. Unverified users can't start swap requests. The bot can't sign anything for members: `/pay` and `/swap` show the exact call each member signs in their own wallet. A wallet signing page is planned for the web app and isn't built yet.
+
+### Privacy
+
+- **Telegram privacy mode is on**, so the bot only receives commands, messages that mention it, and replies to its own messages. Ordinary group chat never reaches it. The bot checks this at startup (`can_read_all_group_messages` must be false) and refuses to run otherwise.
+- It stores, in one JSON file: which group follows which circle; Telegram user id, username and NEAR account for users who ran `/link`, and whether the link is verified; and which rounds and payments it has already announced. No keys, and no message text.
+- Message logging is off by default. `BOT_TRANSCRIPT_PATH` turns on a log of the messages the bot receives and sends, used to record the demo transcript.
+- `/ask` and mention texts, plus the circle's public on-chain data, are sent to NEAR AI Cloud.
+
+### Run it
+
+```sh
+npm run bot                # reads the allowed variables from .env
+npm run test:bot           # unit tests (mocked LLM and Telegram) + sandbox tests; no secrets
+```
+
+To run it 24/7, use the [Dockerfile](Dockerfile): copy [bot/bot.env.example](bot/bot.env.example) to `bot/bot.env`, fill in the treasurer key, bot token and NEAR AI key, then
+
+```sh
+docker build -t rota-bot .
+docker run -d --name rota-bot --restart unless-stopped --env-file bot/bot.env -v rota-bot:/data rota-bot
+```
+
+The image build hasn't been tested here (no Docker on the dev machine). Its install step and module loading were checked from a clean copy of exactly the files it uses.
+
 ## On testnet
 
 | Account | What | Keys |
 |---|---|---|
 | [`circle-v2.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/circle-v2.rota-nearhack.testnet) | Circle contract (current) | **None.** Locked: [delete-key tx](https://testnet.nearblocks.io/txns/E6BvtK2voFu59TezZPqmGU6CXMk5768QzZNQkjVs2UdV) |
 | [`treasurer-v2.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/treasurer-v2.rota-nearhack.testnet) | AI treasurer for circle-v2 | One function-call key: receiver `circle-v2…`, methods `[settle]`, unlimited allowance ([created](https://testnet.nearblocks.io/txns/71VgUVH8B1LMkMzJsmA86Gj5TafnX9wGxA11bzo5d1qv)). It never had a full-access key |
-| [`usdc-mock.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/usdc-mock.rota-nearhack.testnet) | Mock USDC, 6 decimals. **Anyone can mint** | Deployer's key |
+| [`usdc-mock.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/usdc-mock.rota-nearhack.testnet) | **Freely mintable test token** (symbol USDC, 6 decimals). Not real USDC and worth nothing: anyone can call `mint`. "USDC" amounts in this README are this token | Deployer's key |
 | [`circle-v1.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/circle-v1.rota-nearhack.testnet) | First test deployment, same code. **Superseded and not locked**; don't use it | Deployer's key |
 | [`treasurer-v1.rota-nearhack.testnet`](https://testnet.nearblocks.io/address/treasurer-v1.rota-nearhack.testnet) | Treasurer for circle-v1 | Settle key for circle-v1 only |
 
@@ -165,13 +216,18 @@ After deployment the contract account's keys are deleted (locked), so nobody can
 | `scripts/dissolve-circle.ts` | Unanimous dissolve of a testnet demo circle (the escape hatch) |
 | `scripts/create-testnet-account.ts` | Faucet account for the deployer |
 | `scripts/spikes/` | Phase 0 API checks |
+| `bot/` | Telegram bot: [src/scheduler.ts](bot/src/scheduler.ts) (reminders, auto-settle), [src/bot.ts](bot/src/bot.ts) (commands, `/redteam`, AI), [src/ledger.ts](bot/src/ledger.ts) (chain access, key check), [test/](bot/test/) |
+| `Dockerfile` | Runs the bot |
+| `scripts/faucet-topup.ts` | Tops up the deployer from the testnet faucet |
 | `docs/` | Design notes; `docs/testnet/transactions.json` records every testnet transaction |
 
 To rebuild the wasm: `cd contract/circle && cargo near build non-reproducible-wasm --locked --out-dir ../res` (and the same in `contract/mock-ft`).
 
 ## Libraries
 
-near-sdk 5.30, near-contract-standards 5.30 (mock token only), near-workspaces 0.24 and cargo-near 0.23 (tests and builds), near-api-js 7.4 and near-sandbox 0.3 (scripts). Testnet RPC: FastNEAR.
+near-sdk 5.30, near-contract-standards 5.30 (mock token only), near-workspaces 0.24 and cargo-near 0.23 (tests and builds), near-api-js 7.4 and near-sandbox 0.3 (scripts and bot tests), grammY 1.46 (Telegram). AI: NEAR AI Cloud's OpenAI-compatible API, called with `fetch`. Testnet RPC: FastNEAR.
+
+`npm audit` reports advisories for `tar` 7.5.13, which near-sandbox pins exactly. It's a dev/test dependency, used to unpack NEAR's sandbox binary. Production installs (`npm ci --omit=dev`, as in the Dockerfile) report 0 vulnerabilities.
 
 ## License
 

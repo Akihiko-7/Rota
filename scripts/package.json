@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "near-api-js": "7.4.0",
+    "near-api-js": "7.4.0"
+  },
+  "devDependencies": {
     "near-sandbox": "0.3.4"
   }
 }
