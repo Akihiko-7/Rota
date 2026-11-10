@@ -2123,5 +2123,49 @@
         "url": "https://testnet.nearblocks.io/txns/B89ahfyx72e9rntCDVbEdFqKpKGW6ouP6Fisrb8AAaxo"
       }
     ]
+  },
+  {
+    "run": "deploy-mainnet rehearse r1",
+    "at": "2026-11-10T15:47:57.255Z",
+    "transactions": [
+      {
+        "label": "registrar testnet creates rota-circle-r1.testnet with 2.8618 NEAR",
+        "hash": "CQJMZYsninuhTdnNcd9DceQfntzxy3oRCwLvribCQP8",
+        "signer": "rota-nearhack.testnet",
+        "receiver": "testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/CQJMZYsninuhTdnNcd9DceQfntzxy3oRCwLvribCQP8"
+      },
+      {
+        "label": "rota-circle-r1.testnet deploys the circle contract",
+        "hash": "5gTAs1psNsE2CSaCrAH7eXrjKzahW3qrqFjo5YGcSXFg",
+        "signer": "rota-circle-r1.testnet",
+        "receiver": "rota-circle-r1.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/5gTAs1psNsE2CSaCrAH7eXrjKzahW3qrqFjo5YGcSXFg"
+      },
+      {
+        "label": "rota-circle-r1.testnet creates treasurer.rota-circle-r1.testnet holding only a settle key for it (unlimited allowance)",
+        "hash": "DRLKx75RJZqHpcXxaSLRsKBCQ8sEW2ZkqT1WqAZgxprk",
+        "signer": "rota-circle-r1.testnet",
+        "receiver": "treasurer.rota-circle-r1.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/DRLKx75RJZqHpcXxaSLRsKBCQ8sEW2ZkqT1WqAZgxprk"
+      }
+    ]
+  },
+  {
+    "run": "deploy-mainnet rehearse r1",
+    "at": "2026-11-10T15:48:13.785Z",
+    "transactions": [
+      {
+        "label": "lock rota-circle-r1.testnet: delete all 1 access key(s)",
+        "hash": "H6fZSW2DkshDj3Wkx2ocykzAHvAedxbJFD7b76LBop4N",
+        "signer": "rota-circle-r1.testnet",
+        "receiver": "rota-circle-r1.testnet",
+        "ok": true,
+        "url": "https://testnet.nearblocks.io/txns/H6fZSW2DkshDj3Wkx2ocykzAHvAedxbJFD7b76LBop4N"
+      }
+    ]
   }
 ]
