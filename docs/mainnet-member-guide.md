@@ -1,5 +1,7 @@
 # Joining the Rota mainnet circle: one-page guide
 
+> **Not live yet.** Rota isn't deployed on mainnet yet (see the README's status table), so this guide is ready for when it is. The date below was the plan, not a confirmed event.
+
 This circle uses **real money**: real USDC and real NEAR. Read it all once before you start.
 
 ## The circle

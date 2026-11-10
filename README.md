@@ -6,19 +6,29 @@ Your savings circle has an AI treasurer, and even the AI can't steal the money.
 
 Rota is a rotating savings circle (susu, tanda, chama, chit fund, hui) on NEAR. N members each pay a fixed amount every round, and each round one member receives the whole pot. A contract holds the money and pays each round to the scheduled member. An AI treasurer coordinates the circle, but its only key can call `settle` and nothing else.
 
-> **Status: work in progress (NEAR HACKATHON, Nov 2026).**
+## Try it
+
+Nothing to install, and no wallet needed for the first three:
+
+1. **Open [rota-alpha-seven.vercel.app/testnet](https://rota-alpha-seven.vercel.app/testnet).** The landing page reads three facts live from NEAR testnet and shows each as passed or failed: the circle contract has 0 access keys (nobody can change or drain it), its code hash equals the SHA-256 of the committed [contract/res/rota_circle.wasm](contract/res/rota_circle.wasm), and the treasurer's only key can call `settle` and nothing else.
+2. **Open [the finished demo circle](https://rota-alpha-seven.vercel.app/testnet/c/5).** You see 4 members, 4 rounds, who received each pot, and a transaction link for every payout, all settled by the AI treasurer's restricted key.
+3. **Message [@RotaNear_Bot](https://t.me/RotaNear_Bot) on Telegram:** send `/circle 5 testnet`, then `/status`, then `/redteam`. The bot signs three real theft attempts with its own key and posts NEAR's answer to each: two are rejected by the network, and the third is refused by the contract. `/ask` followed by a question goes to the AI (NEAR AI Cloud).
+4. **Try a circle yourself on testnet:** [rota-alpha-seven.vercel.app/testnet/start](https://rota-alpha-seven.vercel.app/testnet/start) walks you through a free testnet wallet, the NEAR faucet and the "Get test USDC" button; then create a circle and invite a second wallet.
+5. **Run a whole circle locally in about a minute:** `npm install && npm run demo:sandbox` (Node.js 24; see [Run the demo](#run-the-demo)).
+
+> **Status (NEAR HACKATHON, Nov 2026).**
 >
 > | Part | State |
 > |---|---|
-> | Circle contract (`contract/circle`) | Sandbox tests pass. Deployed and **locked** on testnet as `circle-v2.rota-nearhack.testnet`; full cycles run on-chain. Not on mainnet |
+> | Circle contract (`contract/circle`) | Sandbox tests pass. Deployed and **locked** on testnet as `circle-v2.rota-nearhack.testnet`; full cycles run on-chain. **Not on mainnet** (see the Mainnet row) |
 > | Mock NEP-141 (`contract/mock-ft`) | **A freely mintable test token, not USDC and worth nothing.** Anyone can call `mint`. Used in tests and on testnet as `usdc-mock.rota-nearhack.testnet` |
 > | Treasurer key | Real and on testnet: an account whose only key can call `settle` on the circle |
 > | Telegram bot (`bot/`) | Commands, status reads, reminders, auto-settle with the treasurer key, `/redteam`, account linking. Tested with a mocked LLM and Telegram, and against a local sandbox. Ran a full circle live in a test group (circle 5 on circle-v2) |
 > | AI answers (NEAR AI Cloud) | Working live with `Qwen/Qwen3.8-27B` (tool calling confirmed, about $0.0003 per question). Tests use a mocked endpoint |
 > | Web app (`web/`) | Read-only pages work without a wallet: live proof checks, the finished demo circle, any circle by number. With a wallet: create, join, deposit, start, pay, pay out, swap turns, close by vote, and the NEP-413 page for the bot's `/link`. The full flow passes end-to-end browser tests on testnet. **Live** at [rota-alpha-seven.vercel.app](https://rota-alpha-seven.vercel.app) (Vercel) |
-> | Cross-chain pay (NEAR Intents) | **Mainnet only. Built, not yet used with real money.** The circle page asks the 1Click API for a deposit address on Base, Arbitrum, Solana, Polygon or Ethereum, then follows the swap until the USDC arrives in the member's own NEAR account, where they press Pay as usual (two steps, see [docs/PHASE0.md](docs/PHASE0.md)). Checked against live 1Click price quotes for all five chains, and in a browser with the API mocked. The first real swap is planned for the mainnet circle on 13 Nov. On testnet it shows disabled, labelled "Mainnet only" |
+> | Cross-chain pay (NEAR Intents) | **Mainnet only, so not usable until the mainnet contract exists. Built, never used with real money.** The circle page asks the 1Click API for a deposit address on Base, Arbitrum, Solana, Polygon or Ethereum, then follows the swap until the USDC arrives in the member's own NEAR account, where they press Pay as usual (two steps, see [docs/PHASE0.md](docs/PHASE0.md)). Checked against live 1Click price quotes for all five chains, and in a browser with the API mocked. On testnet it shows disabled, labelled "Mainnet only" |
 > | Harvest, group staking (`contract/harvest`) | **Testnet only.** Sandbox tests pass. Locked `harvest-v1.rota-nearhack.testnet` is running its first real pot (17 test NEAR in `aurora.pool.f863973.m0`); results will be added when it ripens |
-> | Mainnet | **Not deployed yet.** The web app shows mainnet as "launching soon" with actions disabled |
+> | Mainnet | **Not deployed.** The web app shows mainnet as "launching soon" with every action disabled, and the bot answers `/circle … mainnet` the same way. The deploy script is ready and was rehearsed end to end on testnet ([scripts/deploy-mainnet.ts](scripts/deploy-mainnet.ts), `rota-circle-r1.testnet`): registrar-created account, the same locked code, a settle-only treasurer, then the lock |
 >
 > Phase 0 findings (API checks, design consequences) are in [docs/PHASE0.md](docs/PHASE0.md).
 
@@ -31,7 +41,7 @@ npm install
 npm run demo:sandbox
 ```
 
-It starts a local NEAR sandbox (the first run downloads the ~90 MB sandbox binary), deploys the mock USDC and the circle contract from [contract/res/](contract/res/), locks the circle, creates a treasurer that holds only a `settle` key, and runs one full circle in about 35 seconds:
+It starts a local NEAR sandbox (the first run downloads the ~90 MB sandbox binary), deploys the mock USDC and the circle contract from [contract/res/](contract/res/), locks the circle, creates a treasurer that holds only a `settle` key, and runs one full circle in about a minute (71 s from a fresh clone on our machine):
 
 - 4 members, 10 USDC per round, 2-minute rounds with a 30 s grace period (the sandbox fast-forwards block time).
 - dara posts a 10 USDC bond, takes the first slot and the first pot, then skips round 1.
@@ -72,7 +82,7 @@ So someone who takes over the server, the Telegram account or the LLM can at wor
 
 ### Linking Telegram users to NEAR accounts
 
-`/link <account>` records an **unverified** link and shows a NEP-413 message (`message`, `recipient: rota-bot`, a fresh 32-byte nonce). `/verify <public_key> <signature>` checks the signature and that the key is a full-access key of that account, using near-api-js's `verifyMessage`. Unverified users can't start swap requests. The bot can't sign anything for members: `/pay` and `/swap` show the exact call each member signs in their own wallet. A wallet signing page is planned for the web app and isn't built yet.
+`/link <account>` records an **unverified** link and shows a NEP-413 message (`message`, `recipient: rota-bot`, a fresh 32-byte nonce). `/verify <public_key> <signature>` checks the signature and that the key is a full-access key of that account, using near-api-js's `verifyMessage`. Unverified users can't start swap requests. The bot can't sign anything for members: `/pay` and `/swap` link to the web app, where each member signs in their own wallet. `/link` replies with a link to the web app's signing page, which signs the message with the member's wallet and shows the `/verify` line to send back.
 
 ### Privacy
 
@@ -104,13 +114,15 @@ Hosting options for the image (it needs about 150 MB of memory and a small volum
 | Railway | Hobby plan, billed by usage | $5 / month plan, plus usage (more for 1 GB RAM) |
 | VPS (e.g. Hetzner) | smallest shared-CPU server, Docker installed | about $4–6 / month |
 
-We use **Fly.io**. With a Fly account and [flyctl](https://fly.io/docs/flyctl/install/) installed, one command sets it up or updates it:
+We chose **Fly.io**. With a Fly account and [flyctl](https://fly.io/docs/flyctl/install/) installed, one command sets it up or updates it:
 
 ```sh
 bash deploy/fly-deploy.sh
 ```
 
 It creates the app and a 1 GB volume in Amsterdam, copies only the bot's own settings from `.env` into Fly secrets ([scripts/fly-secrets.ts](scripts/fly-secrets.ts) uses the same allowlist as the bot), deploys the image's `fly` stage on Fly's builders ([fly.toml](fly.toml): one 512 MB machine, restarted if it stops), and on the first run moves the bot's state there. Fly mounts the volume owned by root, so that stage's [entrypoint](deploy/fly-entrypoint.sh) hands `/data` to the `node` user and drops root before starting the bot.
+
+**Where the live bot runs right now:** on the developer's computer, as a long-running process. The Fly.io setup above is ready but has not been run yet; this line will change when it is.
 
 The image is built and smoke-tested by [GitHub Actions](.github/workflows/bot.yml) on every push that touches the bot: it must start, load every module and stop cleanly without config, run as the `node` user (the Fly stage too, with a root-owned volume), and contain no `.env`, `credentials/` or contract sources.
 
@@ -123,7 +135,7 @@ The image is built and smoke-tested by [GitHub Actions](.github/workflows/bot.ym
 - its code hash equals the SHA-256 of the committed [contract/res/rota_circle.wasm](contract/res/rota_circle.wasm);
 - the treasurer holds one key, which can only call `settle` on that contract.
 
-The landing page also shows the finished demo circle (circle 5) with each payout's transaction, and any circle opens at `/c/<number>`.
+The landing page also shows the finished demo circle (circle 5) with each payout's transaction, and any circle opens at `/testnet/c/<number>`.
 
 **A wallet only for actions**, through [NEAR Connect](https://docs.near.org/tools/near-connect) (`@hot-labs/near-connect`, as recommended in NEAR's docs):
 - create a circle;
@@ -133,12 +145,12 @@ The landing page also shows the finished demo circle (circle 5) with each payout
 - propose or accept a swap of turns;
 - vote to close a circle;
 - claim a payout that couldn't be delivered;
-- sign the bot's `/link` message on `/link?tg=…&account=…&nonce=…`, which shows the `/verify` line to send in Telegram. If the bot has `WEB_URL` set, its `/link` reply links straight to this page.
+- sign the bot's `/link` message on `/testnet/link?tg=…&account=…&nonce=…`, which shows the `/verify` line to send in Telegram. If the bot has `WEB_URL` set, its `/link` reply links straight to this page.
 
-**Cross-chain pay is mainnet only.** On testnet the button is shown disabled and labelled "Mainnet only", rather than faked.
+**Cross-chain pay is mainnet only** ([web/src/lib/oneclick.ts](web/src/lib/oneclick.ts), [CrossChain.tsx](web/src/components/CrossChain.tsx)). A member short of USDC on NEAR picks a chain (Base, Arbitrum, Solana, Polygon, Ethereum) and their own address there for refunds. The page asks NEAR Intents' 1Click API for a deposit address that delivers exactly the round's amount of USDC to the member's own NEAR account, follows the swap's status, and enables Pay when it arrives. No API key: the key would be public in a browser app, and unauthenticated quotes work. On testnet the button is shown disabled and labelled "Mainnet only", rather than faked.
 
 **Tests:**
-- `cd web && npm test` runs unit tests: formatting, the form checks mirroring the contract's limits, and NEP-413 signature encoding.
+- `cd web && npm test` runs unit tests: formatting, the form checks mirroring the contract's limits, NEP-413 signature encoding, and the 1Click requests and checks.
 - `npm run e2e` drives the app in Chrome at phone size against testnet. It checks the read-only proof, then the whole member flow: create, join as two members, start, swap turns, pay both rounds, pay out, finish. It also checks that the `/link` page's signature passes NEAR's NEP-413 check against the account's real on-chain key.
 - The browser tests sign with the demo members' testnet keys through a test-only signer. It exists only in builds made with `VITE_DEV_SIGNER=1`; CI checks it isn't in the production bundle. Signing through a real wallet pop-up (NEAR Connect) isn't automated; it has to be tried by hand.
 
@@ -318,15 +330,18 @@ After deployment the contract account's keys are deleted (locked), so nobody can
 | `contract/res` | Release wasm and ABI that the scripts deploy |
 | `scripts/demo-round.ts` | The demo cycle (`npm run demo:sandbox`, `npm run demo:testnet`) |
 | `scripts/deploy-testnet.ts` | Testnet deploy steps: `token`, `circle vN`, `treasurer vN`, `lock vN` |
+| `scripts/deploy-mainnet.ts` | Mainnet deploy (`check v1`, `go v1`) and its testnet rehearsal (`rehearse rN`) |
+| `scripts/harvest.ts`, `scripts/harvest-drive.ts` | Harvest deploy, lock, pots and the step driver |
+| `scripts/sync-web.ts` | Writes the web app's network config from `.env` and the committed wasm |
 | `scripts/dissolve-circle.ts` | Unanimous dissolve of a testnet demo circle (the escape hatch) |
 | `scripts/create-testnet-account.ts` | Faucet account for the deployer |
 | `scripts/spikes/` | Phase 0 API checks |
 | `bot/` | Telegram bot: [src/scheduler.ts](bot/src/scheduler.ts) (reminders, auto-settle), [src/bot.ts](bot/src/bot.ts) (commands, `/redteam`, AI), [src/ledger.ts](bot/src/ledger.ts) (chain access, key check), [test/](bot/test/) |
-| `Dockerfile` | Runs the bot |
+| `Dockerfile`, `fly.toml`, `deploy/` | Runs the bot; Fly.io setup in one command |
 | `web/` | Web app: [src/pages/](web/src/pages/), chain reads in [src/near/chain.ts](web/src/near/chain.ts), wallet in [src/near/wallet.tsx](web/src/near/wallet.tsx), browser tests in [e2e/](web/e2e/) |
 | `docs/demo/` | The live Telegram demo transcript and the demo circle's transactions |
 | `scripts/faucet-topup.ts` | Tops up the deployer from the testnet faucet |
-| `docs/` | Design notes; `docs/testnet/transactions.json` records every testnet transaction |
+| `docs/` | Design notes, the [mainnet member guide](docs/mainnet-member-guide.md); `docs/testnet/transactions.json` records every testnet transaction |
 
 To rebuild the wasm: `cd contract/circle && cargo near build non-reproducible-wasm --locked --out-dir ../res` (and the same in `contract/mock-ft` and `contract/harvest`).
 
