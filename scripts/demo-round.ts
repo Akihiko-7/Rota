@@ -4,16 +4,17 @@
 // and slashes the defaulter's bond into the pot.
 //
 //   npm run demo:sandbox   local NEAR sandbox; no accounts, keys or .env needed.
-//                          Deploys everything itself; fast-forwards block time.
+//                          Deploys and locks everything itself; fast-forwards block time.
 //   npm run demo:testnet   the testnet contracts in .env (ROTA_CONTRACT_ID,
 //                          ROTA_TOKEN_ID, TREASURER_*); takes ~7 minutes of real
 //                          time. Demo member accounts are created on first run.
+//                          Add `-- --resume <circle_id>` to finish an interrupted run.
 
 import { Chain } from "./lib/near.ts";
 import { getKey, saveKey } from "./lib/keys.ts";
 import { loadEnv, requireEnv } from "./lib/env.ts";
 import { appendRun } from "./lib/record.ts";
-import { FUNDING, MEMBER_NAMES, createAccount, createTreasurer, demoCycle, deployCircle, deployToken, fundMember } from "./lib/rota.ts";
+import { FUNDING, MEMBER_NAMES, createAccount, createTreasurer, demoCycle, deployCircle, deployToken, fundMember, lock } from "./lib/rota.ts";
 import type { Account } from "near-api-js";
 
 async function members(chain: Chain, root: Account, tokenId: string, keep: boolean): Promise<Account[]> {
@@ -21,15 +22,16 @@ async function members(chain: Chain, root: Account, tokenId: string, keep: boole
   for (const [i, name] of MEMBER_NAMES.entries()) {
     const id = `${name}.${root.accountId}`;
     const known = keep ? getKey(id) : undefined;
+    const funding = i === 0 ? FUNDING.creator : FUNDING.member;
     let m: Account;
     if (known && (await chain.exists(id))) {
       m = chain.account(id, known);
     } else {
-      const created = await createAccount(chain, root, id, i === 0 ? FUNDING.creator : FUNDING.member, `create demo member ${id}`);
+      const created = await createAccount(chain, root, id, funding, `create demo member ${id}`);
       if (keep) saveKey(id, created.privateKey);
       m = created.account;
     }
-    await fundMember(chain, root, tokenId, m);
+    await fundMember(chain, root, tokenId, m, funding);
     out.push(m);
   }
   return out;
@@ -47,6 +49,7 @@ async function sandbox(): Promise<void> {
     const token = await deployToken(chain, root, `usdc-mock.${root.accountId}`);
     const circle = await deployCircle(chain, root, `circle-v1.${root.accountId}`);
     const treasurer = await createTreasurer(chain, root, `treasurer-v1.${root.accountId}`, circle.account.accountId);
+    await lock(chain, circle.account);
     console.log("\nDemo members");
     const ms = await members(chain, root, token.account.accountId, false);
     await demoCycle({ chain, circleId: circle.account.accountId, tokenId: token.account.accountId, members: ms, treasurer: treasurer.account });
@@ -68,9 +71,11 @@ async function testnet(): Promise<void> {
   try {
     console.log("\nDemo members");
     const ms = await members(chain, root, tokenId, true);
-    const id = await demoCycle({ chain, circleId, tokenId, members: ms, treasurer });
+    const i = process.argv.indexOf("--resume");
+    const resume = i > 0 ? process.argv[i + 1] : undefined;
+    const id = await demoCycle({ chain, circleId, tokenId, members: ms, treasurer, resume });
     console.log(`\nDemo passed: ${chain.log.length} transactions, all checks held.`);
-    appendRun(`demo ${circleId} circle ${id}`, chain.log);
+    appendRun(`demo ${circleId} circle ${id}${resume ? " (resumed)" : ""}`, chain.log);
   } catch (e) {
     appendRun(`demo ${circleId} (failed)`, chain.log);
     throw e;

@@ -8,7 +8,7 @@ import { JsonRpcProvider, KeyPair } from "near-api-js";
 import { loadEnv, setEnv } from "./lib/env.ts";
 
 const FAUCET = "https://helper.nearprotocol.com/account";
-const RPC = "https://rpc.testnet.near.org";
+const RPC = "https://test.rpc.fastnear.com";
 
 loadEnv();
 const accountId = process.argv[2];

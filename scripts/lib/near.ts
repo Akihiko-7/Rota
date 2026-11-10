@@ -56,7 +56,7 @@ export class Chain {
   }
 
   async view<T>(contractId: string, method: string, args: Record<string, unknown> = {}): Promise<T> {
-    return (await this.provider.callFunction({ contractId, method, args })) as T;
+    return (await retryReads(() => this.provider.callFunction({ contractId, method, args }))) as T;
   }
 
   async keyCount(id: string): Promise<number> {
@@ -65,7 +65,7 @@ export class Chain {
 
   /** Block time of the latest block, in ms. */
   async nowMs(): Promise<number> {
-    const block = await this.provider.viewBlock({ finality: "optimistic" });
+    const block = await retryReads(() => this.provider.viewBlock({ finality: "optimistic" }));
     return Number(BigInt(block.header.timestamp_nanosec) / 1_000_000n);
   }
 
@@ -144,6 +144,24 @@ export class Chain {
 }
 
 export { getTransactionLastResult };
+
+/**
+ * Retries a read through network errors (timeouts, unreachable RPC) for about
+ * two minutes. Only reads: retrying a send could submit a transaction twice.
+ */
+async function retryReads<T>(read: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await read();
+    } catch (e) {
+      const text = `${e instanceof Error ? e.message : e} ${JSON.stringify((e as { cause?: unknown })?.cause ?? "")}`;
+      const network = /fetch failed|ETIMEDOUT|ENETUNREACH|ECONNRESET|ECONNREFUSED|EAI_AGAIN|socket|timeout|429|50[234]/i.test(text);
+      if (!network || attempt >= 24) throw e;
+      console.log(`      (RPC unreachable, retrying read in 5 s: ${text.slice(0, 80)})`);
+      await new Promise((r) => setTimeout(r, 5_000));
+    }
+  }
+}
 
 /** The first failure in the transaction or any of its receipts, as text. */
 function failureOf(res: TxResult): string | undefined {
